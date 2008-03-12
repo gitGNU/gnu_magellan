@@ -19,6 +19,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from math import cos, sin, atan2, radians, degrees, sqrt, log
+
 def create_change_timeline(assym,spread,jump,time):
     """
     creates a timeline of changes from arrays containing
@@ -51,6 +53,83 @@ def create_change_timeline(assym,spread,jump,time):
     assym[0] = {'assymetry':0, 'spreadingrate':0}
 
     return [(k,assym[k]) for k in sorted(assym.keys())]
+
+
+def create_anomaly_model(dist,deep):
+    """
+    creates an anomaly model from distance and depth.
+    Other parameters needed are thickness, declination,
+    inclination, azimuth, and magnetizsation
+    The model is based on theoretical computations.
+    Returns a list of depths sorted by distance in x
+    direction: [depth]
+    """
+
+    dmy_thickness = 0.5 #Also given in create_plot (should be param file)
+    dmy_declination = radians(18) #Will be given by parameter file
+    dmy_inclination = radians(75) #Will be given by parameter file
+    dmy_azimuth = radians(100) #Will be given by parameter file
+    dmy_magnetization = 200 #Will be given by parameter file
+
+    Jx = dmy_magnetization * cos(dmy_inclination) * \
+         cos(dmy_azimuth-dmy_declination)
+
+    Jz = dmy_magnetization * sin(dmy_inclination)
+
+    model = {}
+    for distance in dist:
+        model[distance] = 0
+
+    z1 = deep[0]
+    x1 = dist[0]
+    for position in (range(len(dist))[1:]):
+
+        z2 = deep[position]
+        x2 = dist[position]
+
+        p_former = ((z2-z1)**2)/((z2-z1)**2 + (x1-x2)**2)
+        p_latter = ((z2-z1)*(x1-x2))/((z2-z1)**2 + (x1-x2)**2)
+
+        for distance in dist:
+            x1_d = (x1-distance)**2
+            x2_d = (x2-distance)**2
+
+            theta1 = degrees(atan2(z1, x1_d))
+            theta2 = degrees(atan2(z2, x2_d))
+
+            r2_1 = (x2_d + z2**2) / (x1_d + z1**2)
+
+            P = p_former * (theta1-theta2) + p_latter * 0.5 * log(r2_1)
+            Q = p_latter * (theta1-theta2) + p_former * 0.5 * log(r2_1)
+
+            V = 2*(Jx*Q - Jz*P)
+            H = 2*(Jx*P + Jz*Q)
+            T = V*sin(dmy_inclination) + \
+                H*cos(dmy_inclination)*cos(dmy_azimuth-dmy_declination)
+            
+            model[distance] += T
+
+            theta1 = degrees(atan2((z1-dmy_thickness), x1_d))
+            theta2 = degrees(atan2((z2-dmy_thickness), x2_d))
+
+            r2_1 = (x2_d + (z2-dmy_thickness)**2) / \
+                   (x1_d + (z1-dmy_thickness)**2)
+
+            P = p_former * (theta1-theta2) + p_latter * 0.5 * log(r2_1)
+            Q = p_latter * (theta1-theta2) + p_former * 0.5 * log(r2_1)
+
+            V = 2*(Jx*Q - Jz*P)
+            H = 2*(Jx*P + Jz*Q)
+
+            T = V*sin(dmy_inclination) + \
+                H*cos(dmy_inclination)*cos(dmy_azimuth-dmy_declination)
+            
+            model[distance] += T
+
+        z1 = z2
+        x1 = x2
+
+    return [model[k] for k in sorted(model.keys())]
 
 
 def create_deltax(timeline):

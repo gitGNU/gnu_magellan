@@ -30,9 +30,12 @@ TODO list (not prioritized):
   should be able to overwrite them
 
 
-* Implement model
+* Finish implementing model
   The model is a theoretical calculation for anomalies and is
-  the main objective of magellan.
+  the main objective of magellan. Currently it does not use
+  the magnetic layer and needs some fixing regarding computing
+  azimuth, reading magnetization, inclination and so forth.
+  Current version is using dummy values.
 
 
 * Compute azimuth

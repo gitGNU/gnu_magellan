@@ -97,5 +97,7 @@ if __name__ == '__main__':
     mag_layer = create_magnetized_layer(delta_l, delta_r,
                                         min(dist), max(dist))
 
-    create_plot(dist, deep, anom, mag_layer)
+    anom_model = create_anomaly_model(dist,deep)
+
+    create_plot(dist, deep, anom, mag_layer, anom_model)
 

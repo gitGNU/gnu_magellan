@@ -22,7 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from pylab import *
 import Magellan
 
-def create_plot(dist, deep, anom, layer):
+def create_plot(dist, deep, anom, layer, model):
     """
     Plot bathymetry profiles from distance, depth,
     anomalies, the magnetic layer and a model.
@@ -38,6 +38,7 @@ def create_plot(dist, deep, anom, layer):
     anomplot.set_title('Anomalies')
     anomplot.set_ylabel('nT')
     anomplot.plot(dist, anom)
+    anomplot.plot(dist, model)
     anomplot.set_xlim(min(dist),max(dist))
     bathplot.set_title('Bathymetry')
     bathplot.set_xlabel('km')
