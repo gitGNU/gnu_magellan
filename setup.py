@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from distutils.core import setup
+import glob, os, commands, sys
+
+setup(
+	name = 'magellan',
+	version = '0.1',
+	description = 'Marine magnetic anomaly modeller',
+	author = 'Tryggvi Björgvinsson',
+	author_email = 'tryggvib@hi.is',
+	packages = ['Magellan'],
+	package_dir = {'Magellan': 'src/Magellan'},
+	package_data = {'Magellan': ['data/candekent.dat']},
+	scripts = ['src/magellan'],
+	license = 'GNU GPL',
+	platforms = 'posix',
+	requires=['matplotlib (>=0.82)'],
+	)
+
+if sys.argv[1] == 'clean':
+	for root, dirs, files in os.walk('build', topdown=False):
+		for name in files:
+			os.remove(os.path.join(root, name))
+		for name in dirs:
+			os.rmdir(os.path.join(root, name))
+	if os.path.isdir('build'):
+		os.rmdir('build')

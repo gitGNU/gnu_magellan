@@ -1,0 +1,46 @@
+TODO list (not prioritized):
+
+* Implement configuration file
+  The configuration file defines files which contain
+  - assymetry
+  - spreading rates
+  - timescale (if not Cande & Kent's timescale)
+  - jumps
+  - magnetization
+  - parameters
+  
+  The configuration file is a some sort of a project file
+
+
+* Implement graph controls
+  Make it possible to choose which graphs are plotted and
+  what to plot instead of a default plot of bathymetry and
+  anomalies
+
+
+* Implement magnetization file
+  The magnetization file is similar to the jump, assymetry
+  and spreading rate files.
+
+
+* Implement parameter file
+  The parameter file includes parameters which are constants
+  but can be changed. A global parameter file should be used
+  by default, similar to the Cande & Kent timescale but one
+  should be able to overwrite them
+
+
+* Implement model
+  The model is a theoretical calculation for anomalies and is
+  the main objective of magellan.
+
+
+* Compute azimuth
+  Create a function which computes the azimuth from longditudes
+  and latitudes.
+
+
+* Plot failed rifts and pseudo faults
+  Currently magellan marks pseudo faults and failed rifts but
+  does not plot them. Add lines to indicate where they are into
+  the plot

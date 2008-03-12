@@ -1,0 +1,18 @@
+Magellan
+========
+
+Magellan is a marine magnetic anomaly modeller based on Magbath and MODMAG. It
+is meant to be easy to maintain and modify. It is also meant to be easy to use
+when processing large quantities of data and scalable. 
+
+Magellan is free software.
+
+Installation
+============
+
+See the INSTALL file.
+
+How to report bugs
+==================
+
+Bugs should be sent to anyone in the MAINTAINER list.

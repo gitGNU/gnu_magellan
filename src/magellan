@@ -1,0 +1,101 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+"""
+magellan - marine magnetic anomaly modeller
+Copyright (C) 2008 Tryggvi Björgvinsson <tryggvib@hi.is>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
+import sys, getopt
+from Magellan.data import *
+from Magellan.calc import *
+from Magellan.plot import *
+
+def parse_opts():
+
+    options = {'assymetry':None,
+               'config':None,
+               'graphs':None,
+               'jumps':None,
+               'magnetization':None,
+               'parameters':None,
+               'spreadingrate':None,
+               'timescale':None,}
+    
+    try:
+        opts, args = getopt.getopt(sys.argv[1:],
+                                   "a:c:g:j:m:p:s:t:h",
+                                   ["assymetry=",
+                                    "config=", #Not implemented
+                                    "graph=", #Not implemented
+                                    "jump=",
+                                    "magnetization=", #Not implemented
+                                    "parameters=", #Not implemented
+                                    "spreadingrate=",
+                                    "timescale=",
+                                    "help",])
+    except getopt.GetoptError:
+        # print help information and exit:
+        usage()
+        sys.exit(2)
+    for o, a in opts:
+        if o in ("-a", "--assymetry"):
+            options['assymetry'] = a
+        if o in ("-c", "--config"):
+            options['config'] = a
+        if o in ("-g", "--graph"):
+            options['graphs'] = a
+        if o in ("-j", "--jumps"):
+            options['jumps'] =  a
+        if o in ("-m", "--magnetization"):
+            options['magnetization'] = a
+        if o in ("-p", "--parameters"):
+            options['parameters'] = a
+        if o in ("-s", "--spreadingrate"):
+            options['spreadingrate'] =  a
+        if o in ("-t", "--timescale"):
+            options['timescale'] =  a
+        if o in ("-h", "--help"):
+            usage()
+            sys.exit()
+
+    return (options, args)
+
+def usage():
+    print "Usage: magellan [OPTION]... [FILE]"
+    print "Options:"
+    print "      -a [FILE]\t assymetry file"
+    print "      -j [FILE]\t jump file"
+    print "      -s [FILE]\t spreading rate file"
+    print "      -t [FILE]\t timescale file"
+
+if __name__ == '__main__':
+    (files, arguments) = parse_opts()
+    
+    assym = get_assymetry(files['assymetry'])
+    spread = get_spreadingrate(files['spreadingrate'])
+    jump = get_jumps(files['jumps'])
+    timescale = get_timescale(files['timescale'])
+    (dist, deep, anom) = get_trackdata(arguments[0])
+    
+    timeline = create_change_timeline(assym,spread,jump,timescale)
+    (delta_l, delta_r) = create_deltax(timeline)
+    
+    mag_layer = create_magnetized_layer(delta_l, delta_r,
+                                        min(dist), max(dist))
+
+    create_plot(dist, deep, anom, mag_layer)
+

@@ -1,0 +1,8 @@
+include AUTHORS
+include LICENSE
+include HACKING
+include INSTALL
+include MAINTAINERS
+include README
+include TODO
+include src/Magellan/data/candekent.dat
