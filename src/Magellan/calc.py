@@ -21,6 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from math import cos, sin, atan2, radians, degrees, sqrt, log
 
+_default_thickness = '0.5'
+_default_inclination = '75'
+_default_declination = '18'
+
 def create_change_timeline(assym,spread,jump,time):
     """
     creates a timeline of changes from arrays containing
@@ -55,7 +59,7 @@ def create_change_timeline(assym,spread,jump,time):
     return [(k,assym[k]) for k in sorted(assym.keys())]
 
 
-def create_anomaly_model(dist,deep):
+def create_anomaly_model(dist,deep, parameters):
     """
     creates an anomaly model from distance and depth.
     Other parameters needed are thickness, declination,
@@ -65,16 +69,19 @@ def create_anomaly_model(dist,deep):
     direction: [depth]
     """
 
-    dmy_thickness = 0.5 #Also given in create_plot (should be param file)
-    dmy_declination = radians(18) #Will be given by parameter file
-    dmy_inclination = radians(75) #Will be given by parameter file
+    thickness = eval(parameters.get('thickness', _default_thickness))
+    declination = radians(eval(parameters.pop('declination',
+                                              _default_declination)))
+    inclination = radians(eval(parameters.pop('inclination',
+                                              _default_inclination)))
+
     dmy_azimuth = radians(100) #Will be given by parameter file
     dmy_magnetization = 200 #Will be given by parameter file
 
-    Jx = dmy_magnetization * cos(dmy_inclination) * \
-         cos(dmy_azimuth-dmy_declination)
+    Jx = dmy_magnetization * cos(inclination) * \
+         cos(dmy_azimuth-declination)
 
-    Jz = dmy_magnetization * sin(dmy_inclination)
+    Jz = dmy_magnetization * sin(inclination)
 
     model = {}
     for distance in dist:
@@ -104,16 +111,16 @@ def create_anomaly_model(dist,deep):
 
             V = 2*(Jx*Q - Jz*P)
             H = 2*(Jx*P + Jz*Q)
-            T = V*sin(dmy_inclination) + \
-                H*cos(dmy_inclination)*cos(dmy_azimuth-dmy_declination)
+            T = V*sin(inclination) + \
+                H*cos(inclination)*cos(dmy_azimuth-declination)
             
             model[distance] += T
 
-            theta1 = degrees(atan2((z1-dmy_thickness), x1_d))
-            theta2 = degrees(atan2((z2-dmy_thickness), x2_d))
+            theta1 = degrees(atan2((z1-thickness), x1_d))
+            theta2 = degrees(atan2((z2-thickness), x2_d))
 
-            r2_1 = (x2_d + (z2-dmy_thickness)**2) / \
-                   (x1_d + (z1-dmy_thickness)**2)
+            r2_1 = (x2_d + (z2-thickness)**2) / \
+                   (x1_d + (z1-thickness)**2)
 
             P = p_former * (theta1-theta2) + p_latter * 0.5 * log(r2_1)
             Q = p_latter * (theta1-theta2) + p_former * 0.5 * log(r2_1)
@@ -121,8 +128,8 @@ def create_anomaly_model(dist,deep):
             V = 2*(Jx*Q - Jz*P)
             H = 2*(Jx*P + Jz*Q)
 
-            T = V*sin(dmy_inclination) + \
-                H*cos(dmy_inclination)*cos(dmy_azimuth-dmy_declination)
+            T = V*sin(inclination) + \
+                H*cos(inclination)*cos(dmy_azimuth-declination)
             
             model[distance] += T
 
@@ -140,14 +147,14 @@ def create_deltax(timeline):
     a tuple of distance and a dictionary which
     contains polarity, pseudo-faults and failed
     rifts:
-    ([(distance, {polarity,pseudo_faults,failed_rift})],
-     [(distance, {polarity,pseudo_faults,failed_rift})])
+    ([(distance, {polarity,pseudo faults,failed rift})],
+     [(distance, {polarity,pseudo faults,failed rift})])
 
     The former tuple is distances in left direction and
     the latter tuple is distances in right direction
 
     polarity is either the string 'n' (normal) or 'r' (reverse)
-    pseudo_fault and failed_rift are booleans True if it is either
+    pseudo_fault and failed rift are booleans True if it is either
     """
 
     #Delta movement in right direction
@@ -181,11 +188,11 @@ def create_deltax(timeline):
         distance_l = -delta_t * spread_l
         
         deltax_r.append((distance_r, {'polarity':polarity,
-                                      'pseudo_fault':pseudo_fault,
-                                      'failed_rift':False}))
+                                      'pseudo fault':pseudo_fault,
+                                      'failed rift':False}))
         deltax_l.append((distance_l, {'polarity':polarity,
-                                      'pseudo_fault':pseudo_fault,
-                                      'failed_rift':False}))
+                                      'pseudo fault':pseudo_fault,
+                                      'failed rift':False}))
 
         pseudo_fault = False
 
@@ -235,12 +242,12 @@ def _jump_reposition(jump_in, move_to, jump):
 
     while(jump > dx):
         fr_tmp = failed_rift
-        failed_rift = prefs['failed_rift']
-        prefs['failed_rift'] = fr_tmp
+        failed_rift = prefs['failed rift']
+        prefs['failed rift'] = fr_tmp
 
         pf_tmp = pseudo_fault
-        pseudo_fault = prefs['pseudo_fault']
-        prefs['pseudo_fault'] = pf_tmp
+        pseudo_fault = prefs['pseudo fault']
+        prefs['pseudo fault'] = pf_tmp
 
         move_to.append((-dx,prefs))
         jump -= dx
@@ -249,8 +256,8 @@ def _jump_reposition(jump_in, move_to, jump):
 
     new_prefs = {}
     new_prefs['polarity'] = prefs['polarity']
-    new_prefs['failed_rift'] = failed_rift
-    new_prefs['pseudo_fault'] = pseudo_fault
+    new_prefs['failed rift'] = failed_rift
+    new_prefs['pseudo fault'] = pseudo_fault
 
     move_to.append((-jump, new_prefs))
     jump_in.append(((dx-jump),prefs))
@@ -319,3 +326,39 @@ def create_magnetized_layer(deltax_l, deltax_r, min_l, max_r):
     magnetized_layer.extend(sum_right[1:])
 
     return magnetized_layer
+
+def create_faults_and_rifts(deltax_l, deltax_r, min_l, max_r):
+    """
+    
+    """
+
+    faults_and_rifts = []
+
+    distance_sum = 0
+
+    for (deltax, point_prefs) in deltax_l:
+
+        if (distance_sum < min_l): break
+
+        if (point_prefs['pseudo fault'] or point_prefs['failed rift']):
+            faults_and_rifts.append((round(distance_sum),
+                                     point_prefs['pseudo fault'],
+                                     point_prefs['failed rift']))
+    
+        distance_sum += deltax
+
+
+    distance_sum = 0
+
+    for (deltax, point_prefs) in deltax_r:
+
+        if (distance_sum > max_r): break
+
+        if (point_prefs['pseudo fault'] or point_prefs['failed rift']):
+            faults_and_rifts.append((round(distance_sum),
+                                     point_prefs['pseudo fault'],
+                                     point_prefs['failed rift']))
+            
+        distance_sum += deltax
+
+    return faults_and_rifts

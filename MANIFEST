@@ -1,0 +1,14 @@
+AUTHORS
+HACKING
+INSTALL
+LICENSE
+MAINTAINERS
+README
+TODO
+setup.py
+src/magellan
+src/Magellan/__init__.py
+src/Magellan/calc.py
+src/Magellan/data.py
+src/Magellan/plot.py
+src/Magellan/data/candekent.dat

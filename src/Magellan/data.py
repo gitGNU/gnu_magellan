@@ -26,32 +26,29 @@ import Magellan
 data_path = os.path.split(Magellan.__file__)[0]
 _default_timescale = os.path.join(data_path, 'data', 'candekent.dat')
 
-
-def get_assymetry(assymetry_file=None):
+def _read_period_file(period_file, key_column, value_column):
     """
-    retrieves assymetry percentage and corresponding time.
-    If no file is provided assymetry is assumed to be zero
-    throughout. Returns a dictionary consisting of
-    {start_of_period:assymetry_for_period}
-    i.e. beginning of time period maps to assymetry of
-    that particular period.
+    A generator function which reads information from files
+    with time periods and a specific value for those periods
+    Theoretically it can be used for similar, non-time period
+    files since it returns the content of given columns (through
+    the parameters key_column and value_column). Returns a tuple
+    containing the evaluated value of the key column and the
+    value column
     """
 
-    if assymetry_file is None: return {0:0}
-
-    assymetry = {}
-    
-    file_content = open(assymetry_file).read()
+    filepath = os.path.expanduser(period_file)
+    file_content = open(filepath).read()
     lines = file_content.splitlines()
     for line in lines:
         """
-        Format of file:
-        period_start period_end assymetry
+        Format of files:
+        period_start period_end value
 
         where
         period_start is start of period in myrs (million years)
         period_end   is end of period in myrs
-        assymetry    is the assymetry for that period in %
+        value        is the value for that period
 
         % at start of line is a comment
         
@@ -64,12 +61,45 @@ def get_assymetry(assymetry_file=None):
         if re.match('^(%)|(\s*$)',line):
             continue
 
+        #Split line into columns
         columns = line.split()
-        #columns[1] is start, columns[2] is assymetry
-        assymetry[-eval(columns[1])] = {'assymetry':eval(columns[2])}
+
+        yield (eval(columns[key_column]), eval(columns[value_column]))
+
+def get_assymetry(assymetry_file=None):
+    """
+    retrieves assymetry percentage and corresponding time.
+    Returns a dictionary consisting of
+    {start_of_period:assymetry_for_period}
+    i.e. beginning of time period maps to assymetry of
+    that particular period.
+    If no file is provided an empty directory is returned.
+    """
+
+    if assymetry_file is None: return {}
+
+    assymetry = {}
+
+    for (key,value) in _read_period_file(assymetry_file,1,2):
+        assymetry[-key] = {'assymetry':value}
 
     return assymetry
 
+def get_magnetization(magnetization_file=None):
+    """
+    retrieves magnitude of magnetization and corresponding time.
+    Returns a dictionary consisting of
+    {start_of_period:magnetization_for_period}
+    i.e. beginning of time period maps to magnetization of
+    that particular period.
+    If no file is provided an empty directory is returned
+    """
+
+    if magnetization_file is None: return {}
+
+    #It is actually the same process as with assymetry, so we use
+    #the assymetry function
+    return get_assymetry(magnetization_file)
 
 def get_jumps(jump_file=None):
     """
@@ -85,29 +115,11 @@ def get_jumps(jump_file=None):
 
     jumps = {}
 
-    file_content = open(jump_file).read()
-    lines = file_content.splitlines()
-    for line in lines:
-        """
-        Format of file:
-        time distance
-
-        where
-        time     is time of jump myrs (million years)
-        distance is the distance of that jump in km
-
-        % at start of line is a comment
-        """
-
-        #Ignore comments and blank lines
-        if re.match('^(%)|(\s*$)',line):
-            continue
-
-        columns = line.split()
-        #columns[0] is time, columns[1] is distance
-        jumps[-eval(columns[0])] = {'jump':eval(columns[1])}
-
+    for (key,value) in _read_period_file(jump_file,0,1):
+        jumps[-key] = {'jump':value}
+        
     return jumps
+
 
 def get_spreadingrate(spreadingrate_file):
     """
@@ -120,34 +132,11 @@ def get_spreadingrate(spreadingrate_file):
 
     spr_rates = {}
     
-    file_content = open(spreadingrate_file).read()
-    lines = file_content.splitlines()
-    for line in lines:
-        """
-        Format of file:
-        period_start period_end spreading_rate
-
-        where
-        period_start   is start of period in myrs (million years)
-        period_end     is end of period in myrs
-        spreading_rate is the spreading rate for that period in km/myr
-
-        % at start of line is a comment
-        
-        Observe that period_end is only for the user's convenience
-        and the only period_start is used to indicate the spreading
-        rate of a period until next period starts
-        """
-
-        #Ignore comments and blank lines
-        if re.match('^(%)|(\s*$)',line):
-            continue
-        
-        columns = line.split()
-        #columns[1] is start, columns[2] is full spreading rate (half needed)
-        spr_rates[-eval(columns[1])] = {'spreadingrate':(eval(columns[2])/2)}
+    for (key,value) in _read_period_file(spreadingrate_file,1,2):
+        spr_rates[-key] = {'spreadingrate':(value/2)}
 
     return spr_rates
+
 
 def get_timescale(timescale=None):
     """
@@ -162,33 +151,16 @@ def get_timescale(timescale=None):
 
     reversed_timescale = {}
     
-    file_content = open(timescale).read()
+    filepath = os.path.expanduser(timescale)
+    file_content = open(filepath).read()
     lines = file_content.splitlines()
 
     number_of_periods = len(lines)
     if ((number_of_periods % 2) == 0): polarity = 'r'
     else: polarity = 'n'
-    
-    for line in lines:
-        """
-        Format of file:
-        period_start period_end period_name
 
-        where
-        period_start is start of period in myrs (million years)
-        period_end   is end of period in myrs
-        period_name  is name of period
-
-        % at start of line is a comment
-        """
-
-        #Ignore comments and blank lines
-        if re.match('^(%)|(\s*$)',line):
-            continue
-        
-        columns = line.split()
-        
-        reversed_timescale[-eval(columns[1])] = {'polarity':polarity}
+    for (key,value) in _read_period_file(filepath,1,0):
+        reversed_timescale[-key] = {'polarity':polarity}
 
         #Swap polarities
         if polarity == 'n': polarity = 'r'
@@ -208,7 +180,9 @@ def get_trackdata(input_file):
     anomaly = []
     depth = []
 
-    file_content = open(input_file).read()
+
+    filepath = os.path.expanduser(input_file)
+    file_content = open(filepath).read()
     lines = file_content.splitlines()
     for line in lines:
         """
@@ -236,3 +210,57 @@ def get_trackdata(input_file):
 
     return (distance, depth, anomaly)
 
+def get_configurations(config_file=None):
+    """
+    Go through a configuration file (project file)
+    where the user can set different values to settings
+    otherwised provided through flags. Makes it easier
+    to manage flags and use magellan
+    Returns an empty dictionary if no file is provided
+    """
+
+    configurations = {}
+
+    if config_file is None: return configurations
+
+    file_content = open(config_file).read()
+    lines = file_content.splitlines()
+    for line in lines:
+        """
+        Format of files:
+        item=value
+
+        where
+        item is the configurable setting
+        value is the value for that item
+
+        % at start of line is a comment
+        
+        Configurations which do something in magellan are:
+        
+        assymetry = location of assymetry file
+        data = location of data file (track data)
+        jumps = location of jumps file
+        magnetization = location of magnetization file
+        spreading rate = location of spreading rate file
+        
+        declination = amount of declination
+        inclination = amount of inclination
+        thickness = thickness of magnetized layer
+
+        graphs = which graphs to plot (not implemented yet)
+        """
+
+        #Ignore comments and blank lines
+        if re.match('^(%)|(\s*$)',line):
+            continue
+
+        #Split line into columns by '='
+        #Remove preceeding and trailing whitespaces
+        #Pick out the words on each side of 
+        pattern = re.compile(r'^\s*(\w.*\w)\s*=\s*(\S.*\S)\s*$')
+        match = pattern.match(line)
+        
+        configurations[match.group(1).lower()] = match.group(2)
+
+    return configurations

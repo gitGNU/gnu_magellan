@@ -31,21 +31,22 @@ def parse_opts():
                'graphs':None,
                'jumps':None,
                'magnetization':None,
-               'parameters':None,
-               'spreadingrate':None,
+               'spreading rate':None,
                'timescale':None,}
     
     try:
         opts, args = getopt.getopt(sys.argv[1:],
-                                   "a:c:g:j:m:p:s:t:h",
+                                   "a:c:d:g:i:j:m:p:s:t:z:h",
                                    ["assymetry=",
-                                    "config=", #Not implemented
+                                    "config=",
+                                    "declination="
                                     "graph=", #Not implemented
+                                    "inclination="
                                     "jump=",
-                                    "magnetization=", #Not implemented
-                                    "parameters=", #Not implemented
+                                    "magnetization=",
                                     "spreadingrate=",
                                     "timescale=",
+                                    "thickness=",
                                     "help",])
     except getopt.GetoptError:
         # print help information and exit:
@@ -56,18 +57,22 @@ def parse_opts():
             options['assymetry'] = a
         if o in ("-c", "--config"):
             options['config'] = a
+        if o in ("-d", "--declination"):
+            options['declination'] =  a
         if o in ("-g", "--graph"):
             options['graphs'] = a
+        if o in ("-i", "--inclination"):
+            options['inclination'] =  a
         if o in ("-j", "--jumps"):
             options['jumps'] =  a
         if o in ("-m", "--magnetization"):
             options['magnetization'] = a
-        if o in ("-p", "--parameters"):
-            options['parameters'] = a
         if o in ("-s", "--spreadingrate"):
-            options['spreadingrate'] =  a
+            options['spreading rate'] =  a
         if o in ("-t", "--timescale"):
             options['timescale'] =  a
+        if o in ("-z", "--thickness"):
+            options['thickness'] =  a
         if o in ("-h", "--help"):
             usage()
             sys.exit()
@@ -81,23 +86,48 @@ def usage():
     print "      -j [FILE]\t jump file"
     print "      -s [FILE]\t spreading rate file"
     print "      -t [FILE]\t timescale file"
+    print "      -c [FILE]\t configuration file"
+    print "      -d value \t amount of declination"
+    print "      -i value \t amount of inclination"
+    print "      -z value \t thickness of layer"
+    print "      -h       \t print this help"
 
 if __name__ == '__main__':
     (files, arguments) = parse_opts()
-    
+
+    configs = get_configurations(files['config'])
+
+    for key in files.keys():
+        if files[key] is None:
+            files[key] = configs.pop(key, None)
+        else:
+            configs.pop(key, None)
+
+    if len(arguments) == 0:
+        datafile = configs.pop('data', None)
+        if datafile == None:
+            print "No track data file given\n"
+            sys.exit()
+    else:
+        datafile = arguments[0]
+
     assym = get_assymetry(files['assymetry'])
-    spread = get_spreadingrate(files['spreadingrate'])
+    spread = get_spreadingrate(files['spreading rate'])
     jump = get_jumps(files['jumps'])
     timescale = get_timescale(files['timescale'])
-    (dist, deep, anom) = get_trackdata(arguments[0])
+    (dist, deep, anom) = get_trackdata(datafile)
     
     timeline = create_change_timeline(assym,spread,jump,timescale)
     (delta_l, delta_r) = create_deltax(timeline)
-    
+
     mag_layer = create_magnetized_layer(delta_l, delta_r,
                                         min(dist), max(dist))
 
-    anom_model = create_anomaly_model(dist,deep)
+    faults_and_rifts = create_faults_and_rifts(delta_l, delta_r,
+                                               min(dist), max(dist))
 
-    create_plot(dist, deep, anom, mag_layer, anom_model)
+    anom_model = create_anomaly_model(dist,deep,configs)
+
+    create_plot(dist, deep, anom, mag_layer,
+                faults_and_rifts, anom_model, configs)
 

@@ -22,15 +22,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from pylab import *
 import Magellan
 
-def create_plot(dist, deep, anom, layer, model):
+_default_thickness = '0.5'
+
+def create_plot(dist, deep, anom, layer, faultrift, model, parameters):
     """
     Plot bathymetry profiles from distance, depth,
     anomalies, the magnetic layer and a model.
     Uses matplotlib to plot a nice graph.
     """
 
-    dmy_thickness = 0.5 #Will be given by parameter file
-    
+    thickness = eval(parameters.get('thickness', _default_thickness))
+        
     fig = figure(figsize=(12,8))
     anomplot = fig.add_subplot(211)
     bathplot = fig.add_subplot(212)
@@ -44,7 +46,7 @@ def create_plot(dist, deep, anom, layer, model):
     bathplot.set_xlabel('km')
     bathplot.set_ylabel('km')
 
-    deepthick = map(lambda x: x-dmy_thickness, deep)
+    deepthick = map(lambda x: x-thickness, deep)
 
     for ((start,end),polarity) in layer:
         if polarity == 'n': fillcolor = 'b'
@@ -62,6 +64,12 @@ def create_plot(dist, deep, anom, layer, model):
             y = concatenate( (lys, tys[::-1]) )
   
             bathplot.fill(x, y, facecolor=fillcolor)
+
+    for (position,fault,rift) in faultrift:
+        if fault:
+            axvspan(position-0.5,position+0.5,facecolor='y')
+        if rift:
+            axvspan(position-0.5,position+0.5,facecolor='r')
 
     bathplot.plot(dist, deep, linewidth=2)
     bathplot.set_xlim(min(dist),max(dist))
