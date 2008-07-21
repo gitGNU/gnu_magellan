@@ -58,8 +58,9 @@ def create_change_timeline(assym,spread,jump,time):
 
     return [(k,assym[k]) for k in sorted(assym.keys())]
 
-
-def create_anomaly_model(dist,deep, parameters):
+# 12.july 2008
+# Here we need to add the polarity
+def create_anomaly_model(dist,deep,parameters):
     """
     creates an anomaly model from distance and depth.
     Other parameters needed are thickness, declination,
@@ -75,13 +76,15 @@ def create_anomaly_model(dist,deep, parameters):
     inclination = radians(eval(parameters.pop('inclination',
                                               _default_inclination)))
 
-    dmy_azimuth = radians(100) #Will be given by parameter file
-    dmy_magnetization = 200 #Will be given by parameter file
+    dmy_azimuth = radians(100) # Will be given by parameter file
+    dmy_magnetization = 150 # Will be given by parameter file
 
-    Jx = dmy_magnetization * cos(inclination) * \
-         cos(dmy_azimuth-declination)
+    sinI = sin(inclination)
+    cosI = cos(inclination)
+    cosCminD = cos(dmy_azimuth-declination)
 
-    Jz = dmy_magnetization * sin(inclination)
+    Jx = dmy_magnetization * cosI * cosCminD
+    Jz = dmy_magnetization * sinI
 
     model = {}
     for distance in dist:
@@ -104,32 +107,32 @@ def create_anomaly_model(dist,deep, parameters):
             theta1 = degrees(atan2(z1, x1_d))
             theta2 = degrees(atan2(z2, x2_d))
 
-            r2_1 = (x2_d + z2**2) / (x1_d + z1**2)
+            r2_1 = sqrt((x2_d + z2**2)) / sqrt((x1_d + z1**2))
 
             P = p_former * (theta1-theta2) + p_latter * 0.5 * log(r2_1)
-            Q = p_latter * (theta1-theta2) + p_former * 0.5 * log(r2_1)
+            Q = p_latter * (theta1-theta2) - p_former * 0.5 * log(r2_1)
 
             V = 2*(Jx*Q - Jz*P)
             H = 2*(Jx*P + Jz*Q)
-            T = V*sin(inclination) + \
-                H*cos(inclination)*cos(dmy_azimuth-declination)
+            T = V*sinI + \
+                H*cosI*cosCminD
             
             model[distance] += T
 
             theta1 = degrees(atan2((z1-thickness), x1_d))
             theta2 = degrees(atan2((z2-thickness), x2_d))
 
-            r2_1 = (x2_d + (z2-thickness)**2) / \
-                   (x1_d + (z1-thickness)**2)
+            r2_1 = (sqrt(x2_d + (z2-thickness)**2)) / \
+                   (sqrt(x1_d + (z1-thickness)**2))
 
             P = p_former * (theta1-theta2) + p_latter * 0.5 * log(r2_1)
-            Q = p_latter * (theta1-theta2) + p_former * 0.5 * log(r2_1)
+            Q = p_latter * (theta1-theta2) - p_former * 0.5 * log(r2_1)
 
             V = 2*(Jx*Q - Jz*P)
             H = 2*(Jx*P + Jz*Q)
 
-            T = V*sin(inclination) + \
-                H*cos(inclination)*cos(dmy_azimuth-declination)
+            T = V*sinI + \
+                H*cosI*cosCminD
             
             model[distance] += T
 
@@ -141,9 +144,10 @@ def create_anomaly_model(dist,deep, parameters):
 
 def create_deltax(timeline):
     """
-    create the total difference traveled between
+    Skil þetta ekki alveg
+    'create the total difference traveled between
     changes in a timeline given a change timeline
-    as input. Returns a tuple of lists containing
+    as input'. Returns a tuple of lists containing
     a tuple of distance and a dictionary which
     contains polarity, pseudo-faults and failed
     rifts:
@@ -157,34 +161,34 @@ def create_deltax(timeline):
     pseudo_fault and failed rift are booleans True if it is either
     """
 
-    #Delta movement in right direction
+    # Delta movement in right direction
     deltax_r = []
-    #Delta movement in left direction
+    # Delta movement in left direction
     deltax_l = []
 
-    #Initialise with time zero
+    # Initialize with time zero
     (prev_time, action) = timeline.pop(0)
 
-    assymetry = 0 #Default assymetry
+    assymetry = 0 # Default assymetry
     if action.has_key('assymetry'):
         assymetry = action['assymetry']
     
     spreading_rate = action['spreadingrate']
     polarity = action['polarity']
 
-    pseudo_fault = False #Let know of pseudo faults
+    pseudo_fault = False # Let know of pseudo faults
     
-    #Spreading rate in right direction
+    # Spreading rate in right direction
     spread_r = spreading_rate * (1 + assymetry)
-    #Spreading rate in left direction
+    # Spreading rate in left direction
     spread_l = spreading_rate * (1 - assymetry)
 
     for (time,action) in timeline:
 
         delta_t = time - prev_time
-        #Delta distance in right direction
+        # Delta distance in right direction
         distance_r = delta_t * spread_r
-        #Delta distance in left direction
+        # Delta distance in left direction
         distance_l = -delta_t * spread_l
         
         deltax_r.append((distance_r, {'polarity':polarity,
@@ -209,7 +213,7 @@ def create_deltax(timeline):
             spread_r = spreading_rate * (1 + assymetry)
             spread_l = spreading_rate * (1 - assymetry)
 
-        #Jump computations
+        # Jump computations
         if action.has_key('jump'):
             jump = action['jump']
             if (jump > 0):

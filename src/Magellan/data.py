@@ -187,7 +187,7 @@ def get_trackdata(input_file):
     for line in lines:
         """
         Format of file:
-        distance longditude latitude depth anomaly
+        distance longtitude latitude depth anomaly
 
         where
         distance   is the distance in kilometers
@@ -199,14 +199,14 @@ def get_trackdata(input_file):
         % at start of line is a comment
         """
 
-        #Ignore comments and blank lines
+        # Ignore comments and blank lines
         if re.match('^(%)|(\s*$)',line):
             continue
         
         columns = line.split()
-        distance.append(eval(columns[0])) #Evaluate as number
-        depth.append(-1*eval(columns[3])) #Evaluate as number and negate
-        anomaly.append(eval(columns[4])) #Evaluate as number
+        distance.append(eval(columns[0])) # Evaluate as number
+        depth.append(-1*eval(columns[3])) # Evaluate as number and negate
+        anomaly.append(eval(columns[4])) # Evaluate as number
 
     return (distance, depth, anomaly)
 
@@ -251,13 +251,13 @@ def get_configurations(config_file=None):
         graphs = which graphs to plot (not implemented yet)
         """
 
-        #Ignore comments and blank lines
+        # Ignore comments and blank lines
         if re.match('^(%)|(\s*$)',line):
             continue
 
-        #Split line into columns by '='
-        #Remove preceeding and trailing whitespaces
-        #Pick out the words on each side of 
+        # Split line into columns by '='
+        # Remove preceeding and trailing whitespaces
+        # Pick out the words on each side of 
         pattern = re.compile(r'^\s*(\w.*\w)\s*=\s*(\S.*\S)\s*$')
         match = pattern.match(line)
         
