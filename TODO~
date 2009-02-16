@@ -19,6 +19,3 @@ TODO list (not prioritized):
 
 * Allow choice of axis
   Create the options -x<lower/upper> and -y<lower/upper> so the user can choose the upper and lower limits of the axis.
-
-* Save calculation output in a file
-  Save the parameters needed to create the figure so the user doesn't have to run magellan again just to get the figure (pickle)

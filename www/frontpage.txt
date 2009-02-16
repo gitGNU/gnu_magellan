@@ -1,0 +1,14 @@
+<!-- This is the frontpage for the magellan-project.net website -->
+<html>
+<head>
+<title>Magellan, a forward marine magnetic modelling program</title>
+</head>
+<body>
+<p>
+An image:
+<img src="/home/asdis/Uni\ of\ Hawaii/rannsoknir/kolkrabbi.png"
+width="144" height="50">
+</p>
+
+</body>
+</html>

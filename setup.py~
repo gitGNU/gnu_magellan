@@ -13,7 +13,7 @@ setup(
 	packages = ['Magellan'],
 	package_dir = {'Magellan': 'src/Magellan'},
 	package_data = {'Magellan': ['data/candekent.dat']},
-	scripts = ['src/magellan'],
+	scripts = ['src/magellan1'],
 	license = 'GNU GPL',
 	platforms = 'posix',
 	requires=['matplotlib (>=0.82)'],

@@ -1,0 +1,317 @@
+Content-type: text/html
+
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML><HEAD><TITLE>Man page of magellan</TITLE>
+</HEAD><BODY>
+<H1>magellan</H1>
+Section: User Commands  (1)<BR>Updated: December 11 2008<BR><A HREF="#index">Index</A>
+<A HREF="/cgi-bin/man/man2html">Return to Main Contents</A><HR>
+
+<P>
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+magellan - Program to Model Marine Magnetic Anomalies
+<P>
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<B>magellan</B>
+
+<I>[options]</I>
+
+[datafile]
+<P>
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+<I>Magellan</I>
+
+is a program that handles forward modeling of marine magnetic anomalies. It is based on computer program Talwani and others wrote in 1964 where the contribution to a magnetic field from a 2-d polygon is calculated. It can simulate ridge jumps, asymmteric spreading and varying magnetization. The output is a figure showing the synthetic magnetic field, the magnetic anomaly data (if applicable) and the arrangement of the magnetized blocks. Magellan uses bathymetry to assume the shape of the magnetized blocks.
+<P>
+<A NAME="lbAE">&nbsp;</A>
+<H2>DATA FILE</H2>
+
+The data file is an ascii file with five columns, 
+<B>distance lat lon depth anom</B>
+
+where
+<B>distance</B>
+
+is distance from the ridge in kilometers
+<B>lat</B>
+
+is the latitude of the data
+<B>lon</B>
+
+is the longitude of the data
+<B>depth</B>
+
+is the (positive) depth in kilometers and
+<B>anom</B>
+
+is the magnetic anomaly (in nT). In the configuration file, the data file can be set with the
+<I>data</I>
+
+key, i.e. 
+<B>data=filename.</B>
+
+<P>
+<A NAME="lbAF">&nbsp;</A>
+<H2>OPTIONS</H2>
+
+<DL COMPACT>
+<DT><B>-a</B> filename <B>--asymmetry=</B>filename<DD>
+A file containing the asymmetry used in the modeling. In the configuration file, the asymmetry file can be set with the
+<I>asymmetry</I>
+
+key, i.e. 
+<B>asymmetry=filename.</B>
+
+The format of the asymmetry file is
+<B>start end asymmetry</B>
+
+where
+<B>start</B>
+
+and
+<B>end</B>
+
+are the beginning and end of the time interval of the asymmetry in Myr (million years) and
+<B>asymmetry</B>
+
+is a percentage represented as a fraction (i.e. 0.03) during that time interval. A negative number represents faster spreading in the left direction, and a positive number represents faster spreading in the right direction (left being the westerly part of the profile and right being the easterly part). For instance if the asymmetry is  
+<I>0.05</I>
+
+the spreading rate to the left of the ridge is
+<B>(1 - 0.05) * 1/2 spreading rate</B>
+
+and to the right of the ridge the spreading rate is
+<B>(1 + 0.05) * 1/2 spreading rate.</B>
+
+Thus, when the left and right spreading rates are added, the outcome is always the full spreading rate. 
+<P>
+<DT><B>-j</B> filename <B>--jump=</B>filename<DD>
+A file containing the jump(s) used in the modeling. In the configuration file, the jump file can be set with the
+<I>jump</I>
+
+key, i.e. 
+<B>jump=filename.</B>
+
+The format of the jump file is
+<B>time jump</B>
+
+where
+<B>time</B>
+
+is the time when the jump occurs in Myr (million years) and
+<B>jump</B>
+
+is the distance of the jump in kilometers. Negative and positive jumps represent ridge jumps where the new ridge forms left and right of the current ridge, respectively.
+<P>
+<DT><B>-s</B> filename <B>--spreadingrate=</B>filename<DD>
+A file containing the spreading rate(s) used in the modeling. In the configuration file, the spreading rate file can be set with the
+<I>spreadingrate</I>
+
+key, i.e. 
+<B>spreadingrate=filename.</B>
+
+The format of the spreading rate file is
+<B>start end rate</B>
+
+where
+<B>start</B>
+
+and
+<B>end</B>
+
+are the beginning and end of the time interval in Myr (million years) and
+<B>rate</B>
+
+is the total spreading rate in km/Myr (kilometers per million years) of the ridge during that time interval. Unless an asymmetry file is specified the spreading of the ridge is symmetric with both sides of the ridge spreading at half the spreading rate.
+<P>
+<DT><B>-m</B> filename <B>--magnetization=</B>filename<DD>
+A file containing the magnetization used in the modeling. In the configuration file, the magnetization file can be set with the
+<I>magnetization</I>
+
+key, i.e. 
+<B>magnetization=filename.</B>
+
+The format of the magnetization file is
+<B>start end magnetization</B>
+
+where
+<B>start</B>
+
+and
+<B>end</B>
+
+are the beginning and end of the time interval in Myr (million years) and
+<B>magnetization</B>
+
+is the magnetization in A/m (amperes per meter) during that time interval.
+<P>
+<DT><B>-t</B> filename <B>--timescale=</B>filename<DD>
+A file containing the time scale used in the modeling. In the configuration file, the time scale file can be set with the
+<I>timescale</I>
+
+key, i.e. 
+<B>timescale=filename.</B>
+
+The format of the time scale file is 
+<B>start end </B>
+
+where
+<B>start</B>
+
+and
+<B>end</B>
+
+are the beginning and end of the time interval in Myr (million years).
+The time scale of
+<B>Cande and Kent (1995)</B>
+
+is used as a default, so if this option is not set Cande and Kent is used.
+<P>
+<DT><B>-d</B> degrees <B>--declination=</B>degrees<DD>
+The declination used in the modeling. In the configuration file, the declination can be set with the
+<I>declination</I>
+
+key, i.e. 
+<B>declination=amount.</B>
+
+<P>
+<P>
+<DT><B>-i</B> degrees <B>--inclination=</B>degrees<DD>
+The inclination used in the modeling. In the configuration file, the inclination can be set with the
+<I>inclination</I>
+
+key, i.e. 
+<B>inclination=amount.</B>
+
+<P>
+<P>
+<DT><B>-z</B> thickness <B>--thickness=</B>thickness<DD>
+Thickness of the magnetized layer in kilometers. In the configuration file, the thickness can be set with the
+<I>thickness</I>
+
+key, i.e. 
+<B>thickness=thickness.</B>
+
+<P>
+<DT><B>-h --help</B>
+
+<DD>
+Print a small help text explaining the usage of magellan briefly.
+<P>
+<DT><B>-c</B> filename <B>--config=</B>filename<DD>
+A configuration file which defines basic input into
+<I>magellan.</I>
+
+<P>
+
+<P>
+</DL>
+<A NAME="lbAG">&nbsp;</A>
+<H2>EXAMPLES</H2>
+
+<P>
+<DL COMPACT>
+<DT><B>Spreading Rate File Example</B>
+
+<DD>
+<PRE>
+% Everything written after the percentage sign is a comment
+% This is a plain text file with the format as seen below
+% start(Myr) end(Myr) full spreading rate(km/Myr)
+0 50 20 
+50 89 25
+89 118 15
+</PRE>
+
+<P>
+<DT><B>Asymmetry File Example</B>
+
+<DD>
+<PRE>
+% Everything written after the percentage sign is a comment
+% This is a plain text file with the format as seen below
+% start(Myr) end(Myr) asymmetry(%)
+0 50 0.04 
+50 89 0.01
+89 118 -0.02
+</PRE>
+
+<P>
+<DT><B>Jump File Example</B>
+
+<DD>
+<PRE>
+% Everything written after the percentage sign is a comment
+% This is a plain text file with the format as seen below
+% time(Myr) distance(km)
+3 4.3
+23 -3.1
+</PRE>
+
+<P>
+<DT><B>Magnetization File Example</B>
+
+<DD>
+<PRE>
+% Everything written after the percentage sign is a comment
+% This is a plain text file with the format as seen below
+% start(Myr) end(Myr) magnetization(A/m)
+0 0.78 20 
+0.78 10 10 
+10 118 5
+</PRE>
+
+<P>
+<DT><B>Time Scale File Example</B>
+
+<DD>
+<PRE>
+% Everything written after the percentage sign is a comment
+% This is a plain text file with the format as seen below
+% start(Myr) end(Myr)
+0 10
+10 50 
+50 118
+</PRE>
+
+<P>
+<P>
+<DT><B>Configuration file</B>
+
+<DD>
+<PRE>
+% Everything written after the percentage sign is a comment
+% This is a plain text file with the format as seen below
+% start end asymmetry
+0 50 0.04 
+50 89 0.01
+89 118 -0.02
+</PRE>
+
+<P>
+<P>
+</DL>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">DATA FILE</A><DD>
+<DT><A HREF="#lbAF">OPTIONS</A><DD>
+<DT><A HREF="#lbAG">EXAMPLES</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 02:25:31 GMT, January 24, 2009
+</BODY>
+</HTML>

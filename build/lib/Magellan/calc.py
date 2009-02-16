@@ -87,7 +87,9 @@ def create_anomaly_model(dist,deep,parameters, magnet_layer):
     global obliquity  
     
     azimuth = radians(eval(parameters.pop('azimuth', _default_azimuth)))
+    print obliquity
    
+    print thickness, inclination, declination, obliquity, azimuth
     dmy_magnetization = 2 # Will be given by parameter file
     
     # Here we have to multiply with 4pi because we are working in the SI system but these equations were 'derived' 
@@ -347,7 +349,7 @@ def inv_project_anomaly_model(anomaly_model):
     projects the anomaly_model back to the original track.
     """
     global obliquity
-
+    print "hallo",obliquity
     projected_anomaly_model = []
     
     for value in anomaly_model:
@@ -568,7 +570,7 @@ def create_projected_magnetized_layer(magnetized_layer,parameters):
     """
     global obliquity
     obliquity = radians(eval(parameters.pop('obliquity', _default_obliquity)))
-
+    print obliquity
     projected_magnetized_layer = []
     for ((start,end),polarity, magnet) in magnetized_layer:
 	new_start = start * cos(obliquity)

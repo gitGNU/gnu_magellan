@@ -207,8 +207,8 @@ def get_trackdata(input_file):
         
         columns = line.split()
         distance.append(eval(columns[0])) # Evaluate as number
-        depth.append(eval(columns[1])) # Evaluate as number and negate
-        anomaly.append(eval(columns[2])) # Evaluate as number
+        depth.append(eval(columns[3])) # Evaluate as number and negate
+        anomaly.append(eval(columns[4])) # Evaluate as number
 
     if distance[0] > distance[1]:
 	distance.reverse()

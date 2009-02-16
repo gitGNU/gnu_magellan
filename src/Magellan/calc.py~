@@ -347,7 +347,7 @@ def inv_project_anomaly_model(anomaly_model):
     projects the anomaly_model back to the original track.
     """
     global obliquity
-
+    print "hallo",obliquity
     projected_anomaly_model = []
     
     for value in anomaly_model:
@@ -568,7 +568,7 @@ def create_projected_magnetized_layer(magnetized_layer,parameters):
     """
     global obliquity
     obliquity = radians(eval(parameters.pop('obliquity', _default_obliquity)))
-
+    print obliquity
     projected_magnetized_layer = []
     for ((start,end),polarity, magnet) in magnetized_layer:
 	new_start = start * cos(obliquity)

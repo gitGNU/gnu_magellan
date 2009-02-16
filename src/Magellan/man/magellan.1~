@@ -1,0 +1,242 @@
+.TH magellan 1  "December 11 2008" "version 0.3"
+
+.SH NAME
+magellan \- Program to Model Marine Magnetic Anomalies
+
+.SH SYNOPSIS
+.B magellan
+.I [options]
+[datafile]
+
+.SH DESCRIPTION
+.I Magellan
+is a program that handles forward modeling of marine magnetic anomalies. It is based on computer program Talwani and others wrote in 1964 where the contribution to a magnetic field from a 2-d polygon is calculated. It can simulate ridge jumps, asymmteric spreading and varying magnetization. The output is a figure showing the synthetic magnetic field, the magnetic anomaly data (if applicable) and the arrangement of the magnetized blocks. Magellan uses bathymetry to assume the shape of the magnetized blocks.
+
+.SH DATA FILE
+The data file is an ascii file with five columns, 
+.B distance lat lon depth anom
+where
+.B distance
+is distance from the ridge in kilometers
+.B lat
+is the latitude of the data
+.B lon
+is the longitude of the data
+.B depth
+is the (positive) depth in kilometers and
+.B anom
+is the magnetic anomaly (in nT). In the configuration file, the data file can be set with the
+.I data
+key, i.e. 
+.B data=filename.
+
+.SH OPTIONS
+.TP
+\fB\-a\fR filename \fB\-\-asymmetry=\fRfilename
+A file containing the asymmetry used in the modeling. In the configuration file, the asymmetry file can be set with the
+.I asymmetry
+key, i.e. 
+.B asymmetry=filename.
+The format of the asymmetry file is
+.B start end asymmetry
+where
+.B start
+and
+.B end
+are the beginning and end of the time interval of the asymmetry in Myr (million years) and
+.B asymmetry
+is a percentage represented as a fraction (i.e. 0.03) during that time interval. A negative number represents faster spreading in the left direction, and a positive number represents faster spreading in the right direction (left being the westerly part of the profile and right being the easterly part). For instance if the asymmetry is  
+.I 0.05
+the spreading rate to the left of the ridge is
+.B (1 - 0.05) * 1/2 spreading rate
+and to the right of the ridge the spreading rate is
+.B (1 + 0.05) * 1/2 spreading rate.
+Thus, when the left and right spreading rates are added, the outcome is always the full spreading rate. 
+
+.TP
+\fB\-j\fR filename \fB\-\-jump=\fRfilename
+A file containing the jump(s) used in the modeling. In the configuration file, the jump file can be set with the
+.I jump
+key, i.e. 
+.B jump=filename.
+The format of the jump file is
+.B time jump
+where
+.B time
+is the time when the jump occurs in Myr (million years) and
+.B jump
+is the distance of the jump in kilometers. Negative and positive jumps represent ridge jumps where the new ridge forms left and right of the current ridge, respectively.
+
+.TP
+\fB\-s\fR filename \fB\-\-spreadingrate=\fRfilename
+A file containing the spreading rate(s) used in the modeling. In the configuration file, the spreading rate file can be set with the
+.I spreadingrate
+key, i.e. 
+.B spreadingrate=filename.
+The format of the spreading rate file is
+.B start end rate
+where
+.B start
+and
+.B end
+are the beginning and end of the time interval in Myr (million years) and
+.B rate
+is the total spreading rate in km/Myr (kilometers per million years) of the ridge during that time interval. Unless an asymmetry file is specified the spreading of the ridge is symmetric with both sides of the ridge spreading at half the spreading rate.
+
+.TP
+\fB\-m\fR filename \fB\-\-magnetization=\fRfilename
+A file containing the magnetization used in the modeling. In the configuration file, the magnetization file can be set with the
+.I magnetization
+key, i.e. 
+.B magnetization=filename.
+The format of the magnetization file is
+.B start end magnetization
+where
+.B start
+and
+.B end
+are the beginning and end of the time interval in Myr (million years) and
+.B magnetization
+is the magnetization in A/m (amperes per meter) during that time interval.
+
+.TP
+\fB\-t\fR filename \fB\-\-timescale=\fRfilename
+A file containing the time scale used in the modeling. In the configuration file, the time scale file can be set with the
+.I timescale
+key, i.e. 
+.B timescale=filename.
+The format of the time scale file is 
+.B start end 
+where
+.B start
+and
+.B end
+are the beginning and end of the time interval in Myr (million years).
+The time scale of
+.B Cande and Kent (1995)
+is used as a default, so if this option is not set Cande and Kent is used.
+
+.TP
+\fB\-b\fR degrees \fB\-\-azimuth=\fRdegrees
+The azimuth of the profile, measured clockwise from the north. In the configuration file, the azimuth can be set with the
+.I azimuth
+key, i.e. 
+.B azimuth=amount.
+Default is azimuth=90.
+
+.TP
+\fB\-d\fR degrees \fB\-\-declination=\fRdegrees
+The declination used in the modeling. In the configuration file, the declination can be set with the
+.I declination
+key, i.e. 
+.B declination=amount.
+Default is declination=45.
+
+.TP
+\fB\-i\fR degrees \fB\-\-inclination=\fRdegrees
+The inclination used in the modeling. In the configuration file, the inclination can be set with the
+.I inclination
+key, i.e. 
+.B inclination=amount.
+Default is inclination=45.
+
+.TP
+\fB\-o\fR degrees \fB\-\-obliquity=\fRdegrees
+The obliquity is the deviation from the conventional perpendicular spreading of a ridge. In the configuration file, the obliquity can be set with the
+.I obliquity
+key, i.e. 
+.B obliquity=amount.
+Default is obliquity=0.
+
+.TP
+\fB\-z\fR thickness \fB\-\-thickness=\fRthickness
+Thickness of the magnetized layer in kilometers. In the configuration file, the thickness can be set with the
+.I thickness
+key, i.e. 
+.B thickness=thickness.
+
+.TP
+.B \-h \-\-help
+Print a small help text explaining the usage of magellan briefly.
+
+.TP
+\fB\-c\fR filename \fB\-\-config=\fRfilename
+A configuration file which defines basic input into
+.I magellan.
+
+.\"    print "      -p value \t spacing between points in calculations"
+
+.SH EXAMPLES
+
+.TP
+.B Spreading Rate File Example
+.nf
+% Everything written after the percentage sign is a comment
+% This is a plain text file with the format as seen below
+% start(Myr) end(Myr) full spreading rate(km/Myr)
+0 50 20 
+50 89 25
+89 118 15
+.fi
+
+.TP
+.B Asymmetry File Example
+.nf
+% Everything written after the percentage sign is a comment
+% This is a plain text file with the format as seen below
+% start(Myr) end(Myr) asymmetry(%)
+0 50 0.04 
+50 89 0.01
+89 118 -0.02
+.fi
+
+.TP
+.B Jump File Example
+.nf
+% Everything written after the percentage sign is a comment
+% This is a plain text file with the format as seen below
+% time(Myr) distance(km)
+3 4.3
+23 -3.1
+.fi
+
+.TP
+.B Magnetization File Example
+.nf
+% Everything written after the percentage sign is a comment
+% This is a plain text file with the format as seen below
+% start(Myr) end(Myr) magnetization(A/m)
+0 0.78 20 
+0.78 10 10 
+10 118 5
+.fi
+
+.TP
+.B Time Scale File Example
+.nf
+% Everything written after the percentage sign is a comment
+% This is a plain text file with the format as seen below
+% start(Myr) end(Myr)
+0 10
+10 50 
+50 118
+.fi
+
+
+.TP
+.B Configuration file
+.nf
+% Everything written after the percentage sign is a comment
+% This is a plain text file with the format as seen below
+thickness=1
+inclination=75
+declination=-18
+obliquity=30
+spreadingrate=track22.spr
+asymmetry=track22.as
+magnetization=track22.mag
+jump=track22.jump
+data=track22.xzm
+timescale=mytimescale
+.fi
+

@@ -3,7 +3,7 @@
 """
 calc.py - core computations for magellan.
 
-Copyright (C) 2008  Tryggvi Bj√∂rgvinsson <tryggvib@hi.is>
+Copyright (C) 2008  Tryggvi BjÅˆrgvinsson <tryggvib@hi.is>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,14 +23,10 @@ from math import cos, sin, atan2, radians, degrees, sqrt, log, pi
 
 _default_thickness = '0.5'
  # This has to be a decimal number
-_default_azimuth = '90'
-_default_inclination =  '45'
-_default_declination = '45'
-_default_obliquity = '0'
-# The obliquity variable has to be global, it is used in two defs
-obliquity = 0
+_default_inclination =  '21' #'21'  #'-62' #'75'
+_default_declination = '6.3' # ''6.3' #'-18'# '-37' 
 
-def create_change_timeline(assym,spread,jump,magnet,time):
+def create_change_timeline(assym,spread,jump,time):
     """
     creates a timeline of changes from arrays containing
     assymetry, spreading rates, jumps, and timescale for
@@ -39,7 +35,6 @@ def create_change_timeline(assym,spread,jump,magnet,time):
     and dictionary of changing values) sorted by start
     of period:
     [(start_of_period, {change:value})]
-    Note: Updates the asymmetry dictionary
     """
     
     assym_spread = set(assym).intersection(set(spread))
@@ -53,12 +48,6 @@ def create_change_timeline(assym,spread,jump,magnet,time):
         jump[same].update(assym[same])
 
     assym.update(jump)
-
-    assym_magnet = set(assym).intersection(set(magnet))
-    for same in assym_magnet:
-        magnet[same].update(assym[same])
-
-    assym.update(magnet)
 
     assym_time = set(assym).intersection(set(time))
     for same in assym_time:
@@ -80,73 +69,71 @@ def create_anomaly_model(dist,deep,parameters, magnet_layer):
     direction: [depth]
     """
 
-    thickness = eval(parameters.pop('thickness', _default_thickness))
-    declination = radians(eval(parameters.pop('declination', _default_declination)))
+    thickness = eval(parameters.get('thickness', _default_thickness))
+    declination = radians(eval(parameters.pop('declination',
+                                              _default_declination)))
    
-    inclination = radians(eval(parameters.pop('inclination', _default_inclination)))
-    global obliquity  
-    
-    azimuth = radians(eval(parameters.pop('azimuth', _default_azimuth)))
-   
+    inclination = radians(eval(parameters.pop('inclination',
+                                              _default_inclination)))
+
+    dmy_azimuth = radians(-174) #-175 # # -177 radians(100)# Will be given by parameter file
     dmy_magnetization = 2 # Will be given by parameter file
     
     # Here we have to multiply with 4pi because we are working in the SI system but these equations were 'derived' 
     # for the cgs system. Basically k_cgs = 4pi k_si
     
-    #magnetization_1 = 10 # * 4 * pi # = k * H_e = susceptibility * scalar_earth_magnetic_field_strenght = magnetization
-    sus = 0.001
-    #magnetization = magnetization_1/(sus*4*pi)
+    magnetization = 180 * 4 * pi # = k * H_e = susceptibility * scalar_earth_magnetic_field_strenght = magnetization
+#    magnetization = magnetization_1/(0.001*4*pi)
     mag_dict = {}
-    projected_dist = []
-    for distance in dist:
-    	projected_dist.append(distance*cos(obliquity))
 
-    for ((first_pos, last_pos),pol,magnet) in magnet_layer:
-	mag_dict[projected_dist[next_index(projected_dist,first_pos)]] = (pol,magnet)	
+    for ((first_pos, last_pos),pol) in magnet_layer:
+	mag_dict[dist[next_index(dist,first_pos)]] = pol
 
-    #print mag_dict
     sinI = sin(inclination)
     cosI = cos(inclination)
-    cosCminD = cos(azimuth-declination)
+    cosCminD = cos(dmy_azimuth-declination)
 	
     pol_direction = 1
 
 
     model = {}
-    for distance in projected_dist:
+    for distance in dist:
         model[distance] = 0
+
+    # Talwani's parameters
+    Jx = magnetization*cosI*cosCminD
+    Jz = magnetization*sinI
+    contam = 1
     
-    # 1. Method taking all points in the magnetic layer
-    
-    z1 = deep[0] 
-    x1 = projected_dist[0]
-    for position in range(1,len(projected_dist)):
+# Method taking all points in the magnetic layer
+    z1 = deep[0]
+    x1 = dist[0]
+    for position in range(1,len(dist)):
+	print "erum i fyrstu luppunni", position
 	z2 = deep[position]
-	x2 = projected_dist[position]
+	x2 = dist[position]
 	if x1 in mag_dict:
-	    if (mag_dict[x1][0] == 'n'):
+	    if (mag_dict[x1] == 'n'):
 	        pol_direction = 1
 	    else:
 	        pol_direction = -1
-	    mag_field =  mag_dict[x1][1]/(sus*4*pi)
-    
-
 	z3 = z1 + thickness
 	z4 = z2 + thickness
 	z1_pow2 = z1**2    
 	z2_pow2 = z2**2    
 	z3_pow2 = z3**2
 	z4_pow2 = z4**2
-       
-	"""
-    # 2.Method calculating the contribution from the magnetic blocks only 
-    for ((x1, x2),pol) in magnet_layer:
+
+# Method calculating the contribution from the magnetic blocks only 
+"""for ((x1, x2),pol) in magnet_layer:
+	
 	if x1 == x2:
 	    continue
 
 	position_x1 = next_index(dist,x1)
 	z1 = deep[position_x1]
   
+	    #if x1 in mag_dict:
 	if (pol == 'n'):
 	    pol_direction = 1
 	else:
@@ -154,36 +141,33 @@ def create_anomaly_model(dist,deep,parameters, magnet_layer):
 
 
 	position_x2 = next_index(dist, x2)
-        z2 = deep	[position_x2]
+        z2 = deep[position_x2]
+            #x2 = dist[position]* contam
 	z3 = z1 + thickness
 	z4 = z2 + thickness
 	z1_pow2 = z1**2    
 	z2_pow2 = z2**2    
 	z3_pow2 = z3**2
 	z4_pow2 = z4**2
-        """  
-        
-	#### Talwani or Won & Bevis ####    
+"""
 	# Talwani
-	Jx = mag_field*cosI*cosCminD
-    	Jz = mag_field*sinI
-        for distance in projected_dist:
+        for distance in dist:
             x1_calc = x1 - distance
     	    x2_calc = x2 - distance
 
 	    theta1 = atan2(z2,x2_calc)
-	    theta2 = atan2(z4,x2_calc)
-	    theta3 = atan2(z3,x1_calc)
+	    theta2 = atan2(z3,x2_calc)
+	    theta3 = atan2(z4,x1_calc)
 	    theta4 = atan2(z1,x1_calc)
-
+	    
 	    x2_calc_pow2 = x2_calc**2
 	    x1_calc_pow2 = x1_calc**2
-	    # Right surface; from (x2,z2) to (x2,z4)
-	    z21 = z4-z2
+	    # Right surface; from (x2,z2) to (x2,z3)
+	    z21 = z3-z2
 	    x12 = 0
             r1 = sqrt(x2_calc_pow2 + z2_pow2)
-	    r2 = sqrt(x2_calc_pow2 + z4_pow2)
-	    #print "r1:",r1,"r2:",r2, "x1:", x1, "x2_calc_pow:",x2_calc_pow2
+	    r2 = sqrt(x2_calc_pow2 + z3_pow2)
+
 	    P_r = (theta1-theta2)
 	    Q_r = -1*log(r2/r1)
 
@@ -191,8 +175,8 @@ def create_anomaly_model(dist,deep,parameters, magnet_layer):
 	    H_r = 2*(Jx*P_r + Jz*Q_r)
 	    T_r = V_r*sinI + H_r*cosI*cosCminD
 
-	    # Left surface; from (x1,z3) to (x1,z1)
-	    z21 = z1-z3
+	    # Left surface; from (x1,z4) to (x1,z1)
+	    z21 = z1-z4
 	    x12 = 0
 	    r1 = sqrt(x1_calc_pow2 + z4_pow2)
 	    r2 = sqrt(x1_calc_pow2 + z1_pow2)
@@ -219,11 +203,11 @@ def create_anomaly_model(dist,deep,parameters, magnet_layer):
 	    H_t = 2*(Jx*P_t + Jz*Q_t)
 	    T_t = V_t*sinI + H_t*cosI*cosCminD
 
-	    # Bottom surface; from (x2,z4) to (x1,z3)
-	    z21 = z3-z4
+	    # Bottom surface; from (x2,z3) to (x1,z4)
+	    z21 = z4-z3
 	    x12 = x2-x1
-	    r1 = sqrt(x2_calc_pow2 + z4_pow2)
-	    r2 = sqrt(x1_calc_pow2 + z3_pow2)
+	    r1 = sqrt(x2_calc_pow2 + z3_pow2)
+	    r2 = sqrt(x1_calc_pow2 + z4_pow2)
 	
 	    const1 = z21**2/(z21**2 + x12**2)
 	    const2 = z21*x12/(z21**2 + x12**2)
@@ -233,14 +217,16 @@ def create_anomaly_model(dist,deep,parameters, magnet_layer):
 	    V_b = 2*(Jx*Q_b - Jz*P_b)
 	    H_b = 2*(Jx*P_b + Jz*Q_b)
 	    T_b = V_b*sinI + H_b*cosI*cosCminD
+
             model[(distance)] += pol_direction * (T_b + T_t + T_l + T_r)
 
-	z1 = z2
+        z1 = z2
 	x1 = x2 
-    return [model[k] for k in sorted(model.keys())]
-    """
 
-	# Won and Bevis
+    return [model[k] for k in sorted(model.keys())]
+   
+"""
+Won and Bevis
         R1 =  (x2 - x1)**2 + (z2 - z1)**2
         R2 =  (z4 - z2)**2 # (x2 - x2)**2 + (z4 - z2)**2
         R3 =  (x2 - x1)**2 + (z3 - z4)**2
@@ -260,7 +246,7 @@ def create_anomaly_model(dist,deep,parameters, magnet_layer):
 
         
         for distance in dist:
-	    distance_calc = distance
+	    distance_calc = distance*contam
             x1_d = (x1-distance_calc)**2
             x2_d = (x2-distance_calc)**2
 	    xd1 = x1 - distance_calc
@@ -272,10 +258,10 @@ def create_anomaly_model(dist,deep,parameters, magnet_layer):
             theta3 = atan2(z3, xd1)
             theta4 = atan2(z4, xd2)
 
-            r1_21 = 1.0*(x2_d + z2**2) / (x1_d + z1**2)
-            r2_21 = 1.0*(x2_d + z4**2) / (x2_d + z2**2)
-            r3_21 = 1.0*(x1_d + z3**2) / (x2_d + z4**2)
-            r4_21 = 1.0*(x1_d + z1**2) / (x1_d + z3**2)
+            r1_21 = (x2_d + z2**2) / (x1_d + z1**2)
+            r2_21 = (x2_d + z4**2) / (x2_d + z2**2)
+            r3_21 = (x1_d + z3**2) / (x2_d + z4**2)
+            r4_21 = (x1_d + z1**2) / (x1_d + z3**2)
 	
 	    P1 = ((xd1*z2-xd2*z1) / R1) * ((xd1*x21 - z1*z21) / (x1_d + z1**2) - (xd2*x21 - z2*z21) / (x2_d+z2**2))
 	    Q1 = ((xd1*z2-xd2*z1) / R1) * ((xd1*z21 + z1*x21) / (x1_d + z1**2) - (xd2*z21 + z2*x21) / (x2_d+z2**2))
@@ -289,23 +275,21 @@ def create_anomaly_model(dist,deep,parameters, magnet_layer):
 	    P4 = ((xd1*z1-xd1*z3) / R4) * (( -1 * z3*z13) / (x1_d + z3**2) - (-1 * z1*z13) / (x1_d + z1**2))
 	    Q4 = ((xd1*z1-xd1*z3) / R4) * (xd1*z13 / (x1_d + z3**2) - xd1*z13 / (x1_d + z1**2))
 
-	   
+
 	    theta12 = theta1 - theta2
 	    theta24 = theta2 - theta4
 	    theta43 = theta4 - theta3
 	    theta31 = theta3 - theta1
-	    
+
 	    dZdz1 = constant1 * (x21 * theta12 + z21 * 0.5 * log(r1_21)) - P1
 	    dZdx1 = -1 * constant1 * (z21 * theta12 + z21**2 * 0.5 * log(r1_21)) + Q1
 	    dXdz1 = -1 * constant1 * (z21 * theta12 - x21 * 0.5 * log(r1_21)) + Q1
 	    dXdx1 = constant1 * ((z21**2 / x21) * theta12 - z21 * 0.5 * log(r1_21)) + P1
 
 	    dZdz2 = -1 *  P2
-	    dZdx2 = Q2
-	    #dZdx2 = -1 * z42**2 / R2 * 0.5 * log(r2_21) + Q2
+	    dZdx2 = -1 * z42**2 / R2 * 0.5 * log(r2_21) + Q2
 	    dXdz2 = Q2
-	    dXdx2 = P2
-	    #dXdx2 = z42**2 / R2 * theta24 + P2
+	    dXdx2 = z42**2 / R2 * theta24 + P2
 
 	    dZdz3 = constant3 * (x12 * theta43 + z34 * 0.5 * log(r3_21)) - P3
 	    dZdx3 = -1 * constant3 * (z34 * theta43 + z34**2 * 0.5 * log(r3_21)) + Q3
@@ -313,51 +297,39 @@ def create_anomaly_model(dist,deep,parameters, magnet_layer):
 	    dXdx3 = constant3 * ((z34**2 / x12) * theta43 - z34 * 0.5 * log(r3_21)) + P3
 
 	    dZdz4 = -1 * P4
-	    dZdx4 = Q4
-	    #dZdx4 =  -1 * z13**2 / R4 * 0.5 * log(r4_21) + Q4
+	    dZdx4 =  -1 * z13**2 / R4 * 0.5 * log(r4_21) + Q4
 	    dXdz4 = Q4
-	    dXdx4 = P4
-	    #dXdx4 = z13**2 / R4 * theta31 + P4
+	    dXdx4 = z13**2 / R4 * theta31 + P4
 
-            Hz1 = 2*mag_field*(sinI * dZdz1 + cosI * cosCminD * dZdx1)
-	    Hx1 = 2*mag_field*(sinI * dXdz1 + cosI * cosCminD * dXdx1)
+            Hz1 = 2*magnetization*(sinI * dZdz1 + cosI * cosCminD * dZdx1)
+	    Hx1 = 2*magnetization*(sinI * dXdz1 + cosI * cosCminD * dXdx1)
             H1 = Hz1*sinI +  Hx1*cosI*cosCminD
             
-            Hz2 = 2*mag_field*(sinI * dZdz2 + cosI * cosCminD * dZdx2)
-            Hx2 = 2*mag_field*(sinI * dXdz2 + cosI * cosCminD * dXdx2)
+            Hz2 = 2*magnetization*(sinI * dZdz2 + cosI * cosCminD * dZdx2)
+            Hx2 = 2*magnetization*(sinI * dXdz2 + cosI * cosCminD * dXdx2)
             H2 = Hz2*sinI + Hx2*cosI*cosCminD
            
-            Hz3 = 2*mag_field*(sinI * dZdz3 + cosI * cosCminD * dZdx3)
-            Hx3 = 2*mag_field*(sinI * dXdz3 + cosI * cosCminD * dXdx3)
+            Hz3 = 2*magnetization*(sinI * dZdz3 + cosI * cosCminD * dZdx3)
+            Hx3 = 2*magnetization*(sinI * dXdz3 + cosI * cosCminD * dXdx3)
             H3 = Hz3*sinI + Hx3*cosI*cosCminD
 
-            Hz4 = 2*mag_field*(sinI * dZdz4 + cosI * cosCminD * dZdx4)
-            Hx4 = 2*mag_field*(sinI * dXdz4 + cosI * cosCminD * dXdx4)
+            Hz4 = 2*magnetization*(sinI * dZdz4 + cosI * cosCminD * dZdx4)
+            Hx4 = 2*magnetization*(sinI * dXdz4 + cosI * cosCminD * dXdx4)
             H4 = Hz4*sinI + Hx4*cosI*cosCminD
+		    
+#	    print H1, H2, H3, H4
             model[(distance)] += pol_direction * (H1 + H2 + H3 + H4)
-	     
-        z1 = z2
-        x1 = x2 
+"""
+#        z1 = z2
+#        x1 = x2 
    
-    return [model[k] for k in sorted(model.keys())]
-    """
+#    return [model[k] for k in sorted(model.keys())]
 
-def inv_project_anomaly_model(anomaly_model):
-    """
-    projects the anomaly_model back to the original track.
-    """
-    global obliquity
 
-    projected_anomaly_model = []
-    
-    for value in anomaly_model:
-    	projected_anomaly_model.append(value/cos(obliquity))
-
-    return projected_anomaly_model
 
 def create_deltax(timeline):
     """
-    Skil √æetta ekki alveg
+    Skil Å˛etta ekki alveg
     'create the total difference traveled between
     changes in a timeline given a change timeline
     as input'. Returns a tuple of lists containing
@@ -388,10 +360,6 @@ def create_deltax(timeline):
     
     spreading_rate = action['spreadingrate']
     polarity = action['polarity']
-    
-    magnetization = 10 #A/m -- # Default magnetization
-    if action.has_key('magnetization'):
-    	magnetization = action['magnetization']
 
     pseudo_fault = False # Let know of pseudo faults
     
@@ -405,16 +373,14 @@ def create_deltax(timeline):
 
         delta_t = time - prev_time
         # Delta distance in right direction
-        distance_r = delta_t * spread_r#/cos(radians(theta))
+        distance_r = delta_t * spread_r
         # Delta distance in left direction
-        distance_l = -delta_t * spread_l#/cos(radians(theta))
+        distance_l = -delta_t * spread_l
         
         deltax_r.append((distance_r, {'polarity':polarity,
-        			      'magnetization':magnetization,
                                       'pseudo fault':pseudo_fault,
                                       'failed rift':False}))
         deltax_l.append((distance_l, {'polarity':polarity,
-                		      'magnetization':magnetization,
                                       'pseudo fault':pseudo_fault,
                                       'failed rift':False}))
 
@@ -422,9 +388,6 @@ def create_deltax(timeline):
 
         if action.has_key('polarity'):
             polarity = action['polarity']
-            
-        if action.has_key('magnetization'):
-            magnetization = action['magnetization']
 
         if action.has_key('spreadingrate'):
             spreading_rate = action['spreadingrate']
@@ -450,7 +413,6 @@ def create_deltax(timeline):
 
     deltax_l.reverse()
     deltax_r.reverse()
-
     return (deltax_l, deltax_r)
 
 def _jump_reposition(jump_in, move_to, jump):
@@ -485,10 +447,9 @@ def _jump_reposition(jump_in, move_to, jump):
 
     new_prefs = {}
     new_prefs['polarity'] = prefs['polarity']
-    new_prefs['magnetization'] = prefs['magnetization']
     new_prefs['failed rift'] = failed_rift
     new_prefs['pseudo fault'] = pseudo_fault
-    
+
     move_to.append((-jump, new_prefs))
     jump_in.append(((dx-jump),prefs))
 
@@ -510,7 +471,6 @@ def create_magnetized_layer(deltax_l, deltax_r, min_l, max_r):
     distance_sum = 0
     start = 0
     polarity = 'n'
-    magnet = 10 # Default magnetization
 
     sum_right = []
     sum_left = []
@@ -518,15 +478,14 @@ def create_magnetized_layer(deltax_l, deltax_r, min_l, max_r):
     for (deltax, point_prefs) in deltax_r:
 
         if (distance_sum > max_r):
-            sum_right.append(((start, max_r), polarity, magnet))
+            sum_right.append(((start, max_r), polarity))
             break
 
-        if (polarity != point_prefs['polarity'] or magnet != point_prefs['magnetization']):
-            sum_right.append(((start, distance_sum), polarity, magnet))
+        if (polarity != point_prefs['polarity']):
+            sum_right.append(((start, distance_sum), polarity))
 
             start = distance_sum
             polarity = point_prefs['polarity']
-            magnet = point_prefs['magnetization']
             
         distance_sum += deltax
 
@@ -537,46 +496,27 @@ def create_magnetized_layer(deltax_l, deltax_r, min_l, max_r):
     for (deltax, point_prefs) in deltax_l:
 
         if(distance_sum < min_l):
-            sum_left.append(((min_l,start), polarity, magnet))
+            sum_left.append(((min_l,start), polarity))
             break
 
-        if (polarity != point_prefs['polarity'] or magnet != point_prefs['magnetization']):
-            sum_left.append(((distance_sum, start), polarity, magnet))
+        if (polarity != point_prefs['polarity']):
+            sum_left.append(((distance_sum, start), polarity))
 
             start = distance_sum
             polarity = point_prefs['polarity']
-            magnet = point_prefs['magnetization']
             
         distance_sum += deltax
 
     sum_left.reverse()
 
-    ((start_l,end_l),polarity,magnet) = sum_left[-1]
-    ((start_r,end_r),polarity,magnet) = sum_right[0]
+    ((start_l,end_l),polarity) = sum_left[-1]
+    ((start_r,end_r),polarity) = sum_right[0]
 
     magnetized_layer.extend(sum_left[:-1])
-    magnetized_layer.append(((start_l,end_r),polarity,magnet))
+    magnetized_layer.append(((start_l,end_r),polarity))
     magnetized_layer.extend(sum_right[1:])
 
     return magnetized_layer
-
-def create_projected_magnetized_layer(magnetized_layer,parameters):
-    """
-    projects previously made magnetized layer onto a profile 
-    perpendicular to the ridge, if the original profile is obliuqe.
-    Angle of projection is 90 - abs(ridge_orientation - track_orientation).
-    """
-    global obliquity
-    obliquity = radians(eval(parameters.pop('obliquity', _default_obliquity)))
-
-    projected_magnetized_layer = []
-    for ((start,end),polarity, magnet) in magnetized_layer:
-	new_start = start * cos(obliquity)
-	new_end = end*cos(obliquity)
-	projected_magnetized_layer.append(((new_start,new_end),polarity,magnet))
-
-    return projected_magnetized_layer
-
 
 def create_faults_and_rifts(deltax_l, deltax_r, min_l, max_r):
     """

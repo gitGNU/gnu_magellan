@@ -1,0 +1,78 @@
+<!-- This is the frontpage for the magellan-project.net website -->
+<html>
+<head>
+<title>Magellan, a forward marine magnetic modelling program</title>
+</head>
+<body>
+
+<!-- The top border-->
+<table cellpadding="10" cellspacing="0" width="100%" height="130" style="background-color:#FFFF66">
+<tr>
+<td width="180" valign="center" align="center">
+<p>
+<img src="kolkrabbi.png" alt="Magellan Logo" width="128" height="128">
+</p>
+</td>
+<td valign="center" align="center">
+<h1>
+<font size="8" face="Verdana">
+Magellan <br /> 
+</font>
+<font size="5" face="Verdana">
+A forward marine magnetic modelling program
+</font>
+</h1>
+</td>
+</tr>
+</table>
+
+<!-- The left border -->
+<table  style="margin-left:1px; font-weight:bold" cellpadding="10" cellspacing="0" width="100%">
+
+<tr>
+<td align="center" valign="top" width="180">
+<br />
+<a href="magellan_frontpage.html"> Home </a> <br />
+<hr />
+<br />
+<a href="magellan_theory.html"> Theory </a> <br />
+<hr />
+<br />
+<a href="magellan_aboutmagellan.html"> How to? </a> <br />
+<hr />
+<br />
+<a href="magellan_download.html"> Download </a> <br />
+<hr />
+<br />
+<a href="magellan_contact.html"> Contact </a> <br />
+<hr />
+<br />
+</td>
+<td width="1000">
+<h2> What is Magellan?</h2>
+<p>
+Magellan is a new marine magnetic modelling program. It is based on the forward method of modelling where the user tweaks parameters of the model until a good correlation has been made to actual observations.
+</p>
+
+<p>
+Magellan is free to download along with a user manual. It is coded in Python which makes it easier for the user to read and understand and also makes it easier to maintain. 
+</p>
+
+<p>
+It is the developer's wish that Magellan will be maintained and updated as this field gets more advanced.
+</p>
+
+<h2> The Basics of Magellan </h2>
+
+<p>
+As new oceanic lithosphere is created, where seafloor spreading is taking place, it gets magnetized in the direction of Earth's current magnetic field. Now, Earth's magnetic field seems to reverse every now and then meaning that the magnetic poles change positions (north pole goes where south pole was and vice versa). This phenomena produces a series of normal and reversed magnetized stripes parallel to the ridge. If the spreading of the ridge is symmetric, then these stripes are symmetric about the ridge.
+</p>
+
+<p>
+Magnetic data is usually collected perpendicular to a ridge (in the direction of spreading). This is done using a magnetometer that is towed behind a ship or positioned in an airplane (aeromagnetic survey). The magnetic data is usually refered to as 'magnetic anomalies' and Magellan's purpose is to imitate these anomalies so the kinematic characteristics of the ridge can be obtained. 
+</p>
+</td>
+</tr>
+</table>
+</body>
+</html>

@@ -125,5 +125,5 @@ def create_plot(dist, dist_anom, deep, anom, layer, faultrift, model, parameters
     anomplot.legend()
     bathplot.legend()
 
-    show()
+    #show()
 
