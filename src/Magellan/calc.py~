@@ -23,17 +23,17 @@ from math import cos, sin, atan2, radians, degrees, sqrt, log, pi
 
 _default_thickness = '0.5'
  # This has to be a decimal number
-_default_azimuth = '90'
-_default_inclination =  '45'
-_default_declination = '45'
-_default_obliquity = '0'
+_default_azimuth = '100'
+_default_inclination =  '75'
+_default_declination = '-16'
+_default_obliquity = '30'
 # The obliquity variable has to be global, it is used in two defs
-obliquity = 0
+obliquity = 30
 
-def create_change_timeline(assym,spread,jump,magnet,time):
+def create_change_timeline(asym,spread,jump,magnet,time):
     """
     creates a timeline of changes from arrays containing
-    assymetry, spreading rates, jumps, and timescale for
+    asymmetry, spreading rates, jumps, and timescale for
     easier lookup when processing bathymetry. Returns a
     list of tuples (each tuple contains start of period
     and dictionary of changing values) sorted by start
@@ -42,33 +42,33 @@ def create_change_timeline(assym,spread,jump,magnet,time):
     Note: Updates the asymmetry dictionary
     """
     
-    assym_spread = set(assym).intersection(set(spread))
-    for same in assym_spread:
-        spread[same].update(assym[same])
+    asym_spread = set(asym).intersection(set(spread))
+    for same in asym_spread:
+        spread[same].update(asym[same])
 
-    assym.update(spread)
+    asym.update(spread)
 
-    assym_jump = set(assym).intersection(set(jump))
-    for same in assym_jump:
-        jump[same].update(assym[same])
+    asym_jump = set(asym).intersection(set(jump))
+    for same in asym_jump:
+        jump[same].update(asym[same])
 
-    assym.update(jump)
+    asym.update(jump)
 
-    assym_magnet = set(assym).intersection(set(magnet))
-    for same in assym_magnet:
-        magnet[same].update(assym[same])
+    asym_magnet = set(asym).intersection(set(magnet))
+    for same in asym_magnet:
+        magnet[same].update(asym[same])
 
-    assym.update(magnet)
+    asym.update(magnet)
 
-    assym_time = set(assym).intersection(set(time))
-    for same in assym_time:
-        time[same].update(assym[same])
+    asym_time = set(asym).intersection(set(time))
+    for same in asym_time:
+        time[same].update(asym[same])
 
-    assym.update(time)
+    asym.update(time)
 
-    assym[0] = {'assymetry':0, 'spreadingrate':0}
+    asym[0] = {'asymmetry':0, 'spreadingrate':0}
 
-    return [(k,assym[k]) for k in sorted(assym.keys())]
+    return [(k,asym[k]) for k in sorted(asym.keys())]
 
 def create_anomaly_model(dist,deep,parameters, magnet_layer):
     """
@@ -84,11 +84,11 @@ def create_anomaly_model(dist,deep,parameters, magnet_layer):
     declination = radians(eval(parameters.pop('declination', _default_declination)))
    
     inclination = radians(eval(parameters.pop('inclination', _default_inclination)))
-    global obliquity  
     
+    global obliquity  
+    contam = 0.5
     azimuth = radians(eval(parameters.pop('azimuth', _default_azimuth)))
    
-    dmy_magnetization = 2 # Will be given by parameter file
     
     # Here we have to multiply with 4pi because we are working in the SI system but these equations were 'derived' 
     # for the cgs system. Basically k_cgs = 4pi k_si
@@ -100,45 +100,61 @@ def create_anomaly_model(dist,deep,parameters, magnet_layer):
     projected_dist = []
     for distance in dist:
     	projected_dist.append(distance*cos(obliquity))
-
+    min_mag_dict = 0
+    max_mag_dict = 0
+    stuff = []
+    
     for ((first_pos, last_pos),pol,magnet) in magnet_layer:
+        min_value = projected_dist[next_index(projected_dist,first_pos)]
+	max_value = projected_dist[next_index(projected_dist,last_pos)]
+	if (max_value > max_mag_dict):
+	    max_mag_dict = max_value
+	elif (min_value < min_mag_dict):
+	    min_mag_dict = min_value
+        stuff.append(projected_dist[next_index(projected_dist,first_pos)])
 	mag_dict[projected_dist[next_index(projected_dist,first_pos)]] = (pol,magnet)	
 
-    #print mag_dict
+
     sinI = sin(inclination)
     cosI = cos(inclination)
     cosCminD = cos(azimuth-declination)
-	
+    cosC = cos(azimuth)	
     pol_direction = 1
-
-
+    
     model = {}
     for distance in projected_dist:
         model[distance] = 0
     
     # 1. Method taking all points in the magnetic layer
-    
-    z1 = deep[0] 
+    # We can only calculate a model for the timespan of the timescale. We have to make sure that the x1's are defined in mag_dict (which is where information about reversals given input parameters is kept).
+    z1 = deep[0]
     x1 = projected_dist[0]
-    for position in range(1,len(projected_dist)):
-	z2 = deep[position]
-	x2 = projected_dist[position]
-	if x1 in mag_dict:
-	    if (mag_dict[x1][0] == 'n'):
-	        pol_direction = 1
-	    else:
-	        pol_direction = -1
-	    mag_field =  mag_dict[x1][1]/(sus*4*pi)
-    
 
-	z3 = z1 + thickness
-	z4 = z2 + thickness
-	z1_pow2 = z1**2    
-	z2_pow2 = z2**2    
-	z3_pow2 = z3**2
-	z4_pow2 = z4**2
+    
+    for position in range(1,len(projected_dist)):
+	if (x1 < min_mag_dict or x1 > max_mag_dict):
+	    z1 = deep[position]
+	    x1 = projected_dist[position]
+	else:
+	    z2 = deep[position]
+	    x2 = projected_dist[position]
+	    if x1 in mag_dict:
+	        if (mag_dict[x1][0] == 'n'):
+	            pol_direction = 1
+	        else:
+	            pol_direction = -1
+	        # The magnetic field is 4pi10^{-7}*M but it seems as if the parameter 'magnetization' is actually a 
+	        # combination of 4pi*M, that is M_actual=4pi*M. 
+	        mag_field =  pol_direction*mag_dict[x1][1]*pow(10,-7)#/(sus*4*pi)
+         
+	    z3 = z1 + thickness
+	    z4 = z2 + thickness
+	    z1_pow2 = z1**2    
+	    z2_pow2 = z2**2    
+	    z3_pow2 = z3**2
+	    z4_pow2 = z4**2
        
-	"""
+	    """
     # 2.Method calculating the contribution from the magnetic blocks only 
     for ((x1, x2),pol) in magnet_layer:
 	if x1 == x2:
@@ -161,82 +177,83 @@ def create_anomaly_model(dist,deep,parameters, magnet_layer):
 	z2_pow2 = z2**2    
 	z3_pow2 = z3**2
 	z4_pow2 = z4**2
-        """  
+            """  
         
-	#### Talwani or Won & Bevis ####    
-	# Talwani
-	Jx = mag_field*cosI*cosCminD
-    	Jz = mag_field*sinI
-        for distance in projected_dist:
-            x1_calc = x1 - distance
-    	    x2_calc = x2 - distance
+	    #### Talwani or Won & Bevis ####    
+	    # Talwani
+	    Jx = mag_field*cosI*cosC
+	    # If the field is reversed this parameter is negative (because of sin of the inclination)
+	    Jz = mag_field*sinI
+            for distance in projected_dist:
+                x1_calc = (x1 - distance)*contam
+    	        x2_calc = (x2 - distance)*contam
 
-	    theta1 = atan2(z2,x2_calc)
-	    theta2 = atan2(z4,x2_calc)
-	    theta3 = atan2(z3,x1_calc)
-	    theta4 = atan2(z1,x1_calc)
+	        theta1 = atan2(z2,x2_calc)
+	        theta2 = atan2(z4,x2_calc)
+	        theta3 = atan2(z3,x1_calc)
+	        theta4 = atan2(z1,x1_calc)
 
-	    x2_calc_pow2 = x2_calc**2
-	    x1_calc_pow2 = x1_calc**2
-	    # Right surface; from (x2,z2) to (x2,z4)
-	    z21 = z4-z2
-	    x12 = 0
-            r1 = sqrt(x2_calc_pow2 + z2_pow2)
-	    r2 = sqrt(x2_calc_pow2 + z4_pow2)
-	    #print "r1:",r1,"r2:",r2, "x1:", x1, "x2_calc_pow:",x2_calc_pow2
-	    P_r = (theta1-theta2)
-	    Q_r = -1*log(r2/r1)
+	        x2_calc_pow2 = x2_calc**2
+	        x1_calc_pow2 = x1_calc**2
+	        # Right surface; from (x2,z2) to (x2,z4) z21 = z4-z2
+	        x12 = 0
+                r1 = sqrt(x2_calc_pow2 + z2_pow2)
+	        r2 = sqrt(x2_calc_pow2 + z4_pow2)
+	        #print "r1:",r1,"r2:",r2, "x1:", x1, "x2_calc_pow:",x2_calc_pow2
+	        P_r = (theta1-theta2)
+	        Q_r = -1*log(r2/r1)
 
-	    V_r = 2*(Jx*Q_r - Jz*P_r)
-	    H_r = 2*(Jx*P_r + Jz*Q_r)
-	    T_r = V_r*sinI + H_r*cosI*cosCminD
+	        V_r = 2*(Jx*Q_r - Jz*P_r)
+	        H_r = 2*(Jx*P_r + Jz*Q_r)
+	        T_r = V_r*sinI + H_r*cosI*cosCminD
+ 
+	        # Left surface; from (x1,z3) to (x1,z1)
+	        z21 = z1-z3
+	        x12 = 0
+	        r1 = sqrt(x1_calc_pow2 + z4_pow2)
+	        r2 = sqrt(x1_calc_pow2 + z1_pow2)
 
-	    # Left surface; from (x1,z3) to (x1,z1)
-	    z21 = z1-z3
-	    x12 = 0
-	    r1 = sqrt(x1_calc_pow2 + z4_pow2)
-	    r2 = sqrt(x1_calc_pow2 + z1_pow2)
+	        P_l = (theta3-theta4)
+	        Q_l = -1*log(r2/r1)
 
-	    P_l = (theta3-theta4)
-	    Q_l = -1*log(r2/r1)
-
-	    V_l = 2*(Jx*Q_l - Jz*P_l)
-	    H_l = 2*(Jx*P_l + Jz*Q_l)
-	    T_l = V_l*sinI + H_l*cosI*cosCminD
+	        V_l = 2*(Jx*Q_l - Jz*P_l)
+	        H_l = 2*(Jx*P_l + Jz*Q_l)
+	        T_l = V_l*sinI + H_l*cosI*cosCminD
 	    
-	    # Top surface; from (x1,z1) to (x2,z2)
-	    z21 = z2-z1
-	    x12 = x1 - x2
-	    r1 = sqrt(x1_calc_pow2 + z1_pow2)
-	    r2 = sqrt(x2_calc_pow2 + z2_pow2)
+	        # Top surface; from (x1,z1) to (x2,z2)
+	        z21 = z2-z1
+	        x12 = (x1 - x2)*contam
+	        r1 = sqrt(x1_calc_pow2 + z1_pow2)
+	        r2 = sqrt(x2_calc_pow2 + z2_pow2)
 	
-	    const1 = z21**2/(z21**2 + x12**2)
-	    const2 = z21*x12/(z21**2 + x12**2)
-	    P_t = const1*(theta4 - theta1) + const2*log(r1/r2)
-	    Q_t = const2*(theta4-theta1) - const1*log(r1/r2)
+	        const1 = z21**2/(z21**2 + x12**2)
+	        const2 = z21*x12/(z21**2 + x12**2)
+	        P_t = const1*(theta4 - theta1) + const2*log(r1/r2)
+	        Q_t = const2*(theta4-theta1) - const1*log(r1/r2)
 
-	    V_t = 2*(Jx*Q_t - Jz*P_t)
-	    H_t = 2*(Jx*P_t + Jz*Q_t)
-	    T_t = V_t*sinI + H_t*cosI*cosCminD
+	        V_t = 2*(Jx*Q_t - Jz*P_t)
+	        H_t = 2*(Jx*P_t + Jz*Q_t)
+	        T_t = V_t*sinI + H_t*cosI*cosCminD
 
-	    # Bottom surface; from (x2,z4) to (x1,z3)
-	    z21 = z3-z4
-	    x12 = x2-x1
-	    r1 = sqrt(x2_calc_pow2 + z4_pow2)
-	    r2 = sqrt(x1_calc_pow2 + z3_pow2)
+	        # Bottom surface; from (x2,z4) to (x1,z3)
+	        z21 = z3-z4
+	        x12 = (x2-x1)*contam
+	        r1 = sqrt(x2_calc_pow2 + z4_pow2)
+	        r2 = sqrt(x1_calc_pow2 + z3_pow2)
 	
-	    const1 = z21**2/(z21**2 + x12**2)
-	    const2 = z21*x12/(z21**2 + x12**2)
-	    P_b = const1*(theta2-theta3) + const2*log(r1/r2)
-	    Q_b = const2*(theta2-theta3) - const1*log(r1/r2)
+	        const1 = z21**2/(z21**2 + x12**2)
+	        P_b = const1*(theta2-theta3) + const2*log(r1/r2)
+	        Q_b = const2*(theta2-theta3) - const1*log(r1/r2)
 
-	    V_b = 2*(Jx*Q_b - Jz*P_b)
-	    H_b = 2*(Jx*P_b + Jz*Q_b)
-	    T_b = V_b*sinI + H_b*cosI*cosCminD
-            model[(distance)] += pol_direction * (T_b + T_t + T_l + T_r)
+	        V_b = 2*(Jx*Q_b - Jz*P_b)
+	        H_b = 2*(Jx*P_b + Jz*Q_b)
+	        T_b = V_b*sinI + H_b*cosI*cosCminD
+	        # If the field is reversed we have sinI changing sign (sinI=-sin(-I)) and cosCminD changing sign (cos(C) = -cos(180-C) and therefore we can just multiply the total field by -1 for a reversed block.
+                model[(distance)] +=  (T_b + T_t + T_l + T_r) *pow(10,9)#*pol_direction
+            
+	    z1 = z2
+	    x1 = x2 
 
-	z1 = z2
-	x1 = x2 
     return [model[k] for k in sorted(model.keys())]
     """
 
@@ -347,7 +364,7 @@ def inv_project_anomaly_model(anomaly_model):
     projects the anomaly_model back to the original track.
     """
     global obliquity
-    print "hallo",obliquity
+
     projected_anomaly_model = []
     
     for value in anomaly_model:
@@ -382,10 +399,11 @@ def create_deltax(timeline):
     # Initialize with time zero
     (prev_time, action) = timeline.pop(0)
 
-    assymetry = 0 # Default assymetry
-    if action.has_key('assymetry'):
-        assymetry = action['assymetry']
+    asymmetry = 0 # Default asymmetry
+    if action.has_key('asymmetry'):
+        asymmetry = action['asymmetry']
     
+
     spreading_rate = action['spreadingrate']
     polarity = action['polarity']
     
@@ -396,9 +414,10 @@ def create_deltax(timeline):
     pseudo_fault = False # Let know of pseudo faults
     
     # Spreading rate in right direction
-    spread_r = spreading_rate * (1 + assymetry)
+    spread_r = spreading_rate * (1 + asymmetry)
+    
     # Spreading rate in left direction
-    spread_l = spreading_rate * (1 - assymetry)
+    spread_l = spreading_rate * (1 - asymmetry)
 
 
     for (time,action) in timeline:
@@ -428,13 +447,13 @@ def create_deltax(timeline):
 
         if action.has_key('spreadingrate'):
             spreading_rate = action['spreadingrate']
-            spread_r = spreading_rate * (1 + assymetry)
-            spread_l = spreading_rate * (1 - assymetry)
+            spread_r = spreading_rate * (1 + asymmetry)
+            spread_l = spreading_rate * (1 - asymmetry)
 
-        if action.has_key('assymetry'):
-            assymetry = action['assymetry']
-            spread_r = spreading_rate * (1 + assymetry)
-            spread_l = spreading_rate * (1 - assymetry)
+        if action.has_key('asymmetry'):
+            asymmetry = action['asymmetry']
+            spread_r = spreading_rate * (1 + asymmetry)
+            spread_l = spreading_rate * (1 - asymmetry)
 
         # Jump computations	
         if action.has_key('jump'):
@@ -450,7 +469,7 @@ def create_deltax(timeline):
 
     deltax_l.reverse()
     deltax_r.reverse()
-
+    
     return (deltax_l, deltax_r)
 
 def _jump_reposition(jump_in, move_to, jump):
@@ -502,7 +521,7 @@ def create_magnetized_layer(deltax_l, deltax_r, min_l, max_r):
     number) and max_r (maximum distance to the right) from the
     two halfs. Returns a list of tuples. Each tuple includes
     another tuple with start and end postitions, and the
-    polarity for that distance:
+    polarity and magnetization for that distance:
     [((start,end),polarity)]
     """
 
@@ -512,6 +531,7 @@ def create_magnetized_layer(deltax_l, deltax_r, min_l, max_r):
     polarity = 'n'
     magnet = 10 # Default magnetization
 
+    
     sum_right = []
     sum_left = []
 
@@ -521,13 +541,15 @@ def create_magnetized_layer(deltax_l, deltax_r, min_l, max_r):
             sum_right.append(((start, max_r), polarity, magnet))
             break
 
-        if (polarity != point_prefs['polarity'] or magnet != point_prefs['magnetization']):
-            sum_right.append(((start, distance_sum), polarity, magnet))
+
+        if ((polarity != point_prefs['polarity']  or magnet != point_prefs['magnetization'])):
+	    #distance_sum += deltax
+	    sum_right.append(((start, distance_sum), polarity, magnet))
 
             start = distance_sum
             polarity = point_prefs['polarity']
             magnet = point_prefs['magnetization']
-            
+	#else:            
         distance_sum += deltax
 
     distance_sum = 0
@@ -539,14 +561,14 @@ def create_magnetized_layer(deltax_l, deltax_r, min_l, max_r):
         if(distance_sum < min_l):
             sum_left.append(((min_l,start), polarity, magnet))
             break
-
-        if (polarity != point_prefs['polarity'] or magnet != point_prefs['magnetization']):
-            sum_left.append(((distance_sum, start), polarity, magnet))
-
+        
+	if ((polarity != point_prefs['polarity'] or magnet != point_prefs['magnetization'])):
+	    #distance_sum += deltax
+	    sum_left.append(((distance_sum, start), polarity, magnet))
             start = distance_sum
             polarity = point_prefs['polarity']
             magnet = point_prefs['magnetization']
-            
+	#else:
         distance_sum += deltax
 
     sum_left.reverse()
@@ -568,7 +590,7 @@ def create_projected_magnetized_layer(magnetized_layer,parameters):
     """
     global obliquity
     obliquity = radians(eval(parameters.pop('obliquity', _default_obliquity)))
-    print obliquity
+
     projected_magnetized_layer = []
     for ((start,end),polarity, magnet) in magnetized_layer:
 	new_start = start * cos(obliquity)
@@ -612,6 +634,10 @@ def create_faults_and_rifts(deltax_l, deltax_r, min_l, max_r):
     return faults_and_rifts
 
 def next_index(indexed_list, search_value):
+    """
+    Returns the index of the number in indexed_list that search_value is closest to.
+    """
+
     for index in range(len(indexed_list)):
 	if index == len(indexed_list)-1:
 	    return index
@@ -621,4 +647,67 @@ def next_index(indexed_list, search_value):
 		return index
 	    else:
 		return index+1
+
+def next_upper(indexed_list, search_value):
+    """
+    Returns the index of the number in indexed_list that search_value is rounded UP to.
+    """
+
+    for index in range(len(indexed_list)):
+	if index == len(indexed_list)-1:
+	    return index
+
+	if (search_value <= indexed_list[index+1]) and (search_value > indexed_list[index]):
+	    return index+1
+
+
+def next_lower(indexed_list, search_value):
+    """
+    Returns the index of the number in indexed_list that search_value is rounded DOWN to.
+    """
+
+    for index in range(len(indexed_list)):
+	if index == len(indexed_list)-1:
+	    return index
+
+	if (search_value < indexed_list[index+1]) and (search_value >= indexed_list[index]):
+	    return index
+
+def get_depth(indexed_dist, indexed_depth, search_value):
+    """
+    The location of a boundary between reversed and normally polarized layers will generally not coincide with the 
+    location of a known depth, therefore we do not know the depth of the location of the boundary. This module returns
+    the interpolated depth of a location as that does not coincide with a known depth. 
+    """
+    # These four coordinates defnine a triangle in which search_value is a coordinate on the x-axis between x1 and x2.
+    # We want to find the location of the corresponding value for search_value (s1) on the hypotenuse of the triangle, 
+    # s2.
+    #                                                    y2
+    #                                                .    |
+    #                                           s2.       |
+    #                                          . ,        |
+    #                                       .    ,        |
+    #                                    .       ,        |
+    #                                .           ,        | 
+    #                             .              ,        |
+    #                          .                 ,        |   
+    #			(x1,y1)------------------s1-------x2
+    y1 = indexed_depth[next_lower(indexed_dist, search_value)]
+    y2 = indexed_depth[next_upper(indexed_dist, search_value)]
+    x1 = indexed_dist[next_lower(indexed_dist, search_value)]
+    x2 = indexed_dist[next_upper(indexed_dist, search_value)]
+
+    if(search_value == x1):
+  	s2 = y1
+    elif(search_value == x2):
+	s2 = y2 
+    else:
+        s1 = abs(search_value-x1)
+        s2_relative = s1*abs(y1-y2)/abs(x1-x2)
+    	if (y2 > y1):
+	    s2 = y1 + s2_relative
+	else:
+	    s2 = y1 - s2_relative
+    
+    return s2
 

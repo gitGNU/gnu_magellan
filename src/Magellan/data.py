@@ -24,7 +24,7 @@ import Magellan
 
 # Filenames for default files
 data_path = os.path.split(Magellan.__file__)[0]
-_default_timescale = os.path.join(data_path, 'data', 'candekent.dat')
+_default_timescale = os.path.join(data_path, 'data', 'Lourens2004.dat')
 
 def _read_period_file(period_file, key_column, value_column):
     """
@@ -157,16 +157,16 @@ def get_timescale(timescale=None):
     lines = file_content.splitlines()
 
     number_of_periods = len(lines)
-    if ((number_of_periods % 2) == 0): polarity = 'r'
-    else: polarity = 'n'
-
+    #if ((number_of_periods % 2) == 0): polarity = 'r'
+    #else: polarity = 'n'
+    polarity='n'
     for (key,value) in _read_period_file(filepath,1,0):
         reversed_timescale[-key] = {'polarity':polarity}
 
         #Swap polarities
         if polarity == 'n': polarity = 'r'
         else: polarity = 'n'
-
+    
     return reversed_timescale
 
 
@@ -207,8 +207,8 @@ def get_trackdata(input_file):
         
         columns = line.split()
         distance.append(eval(columns[0])) # Evaluate as number
-        depth.append(eval(columns[1])) # Evaluate as number and negate
-        anomaly.append(eval(columns[2])) # Evaluate as number
+        depth.append(eval(columns[3])) # Evaluate as number and negate
+        anomaly.append(eval(columns[4])) # Evaluate as number
 
     if distance[0] > distance[1]:
 	distance.reverse()

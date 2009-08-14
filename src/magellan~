@@ -108,10 +108,10 @@ def usage():
 
 if __name__ == '__main__':
     (files, arguments) = parse_opts()
-
+    
     configs = get_configurations(files['config'])
     parameters = get_configurations(files['config'])
-   
+    
     if len(arguments) == 0:
         datafile = configs.pop('data', None)
         if datafile == None:
@@ -133,12 +133,14 @@ if __name__ == '__main__':
     jump = get_jumps(files['jump'])
     magnet = get_magnetization(files['magnetization'])
     timescale = get_timescale(files['timescale'])
+
     (dist, deep, dist_anom, anom) = get_trackdata(datafile)
     
     timeline = create_change_timeline(asym,spread,jump,magnet,timescale)
-
+    
+    
     (delta_l, delta_r) = create_deltax(timeline)
-
+   
     mag_layer = create_magnetized_layer(delta_l, delta_r,
                                         min(dist), max(dist))
 
@@ -151,14 +153,21 @@ if __name__ == '__main__':
     faults_and_rifts = create_faults_and_rifts(delta_l, delta_r,
                                                min(dist), max(dist))
     #print faults_and_rifts
-    f=open('bull', 'w')
+    f=open('pf', 'w')
     for (dista,fault,rift) in faults_and_rifts:
 	if fault:
 	    f.write(str(dista) + "\n")
     f.close()
 
+    f=open('fr', 'w')
+    for (dista,fault,rift) in faults_and_rifts:
+	if rift:
+	    f.write(str(dista) + "\n")
+    f.close()
 
-    projected_anom_model = create_anomaly_model(dist,deep,parameters,projected_mag_layer)
+    projected_anom_model = create_anomaly_model(dist,deep,files,projected_mag_layer)
+    print projected_anom_model[len(projected_anom_model)-1], dist[len(dist)-1]
+    
 
     anom_model = inv_project_anomaly_model(projected_anom_model)
 
@@ -166,8 +175,13 @@ if __name__ == '__main__':
     for i in range(0,len(dist_anom)):
 	f.write(str(dist_anom[i]) + " " + str(anom_model[i+20]) + " " + str(anom[i]) + " " +  str(deep[i+20]) + "\n")
     f.close()
+    
+    f=open('magellano','w')
+    for i in range(0,len(dist_anom)):
+	f.write(str(dist_anom[i]) + " " + str(anom_model[i+20]) + "\n")
+    f.close()
     #for i in range(0,len(dist_anom)):
-	#print anom_model[i+20]
+	#print dist_anom[i], anom_model[i+20]
 
     #for i in range(0,len(dist_anom)):
 	#print dist_anom[i], anom_model[i+20], anom[i]

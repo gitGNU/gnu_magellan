@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from pylab import *
 import Magellan
-from Magellan.calc import next_index
+from Magellan.calc import *
 
 _default_thickness = '0.5'
 
@@ -45,50 +45,99 @@ def create_plot(dist, dist_anom, deep, anom, layer, faultrift, model, parameters
     bathplot.set_title('Bathymetry')
     bathplot.set_xlabel('km')
     bathplot.set_ylabel('km')
-
+    stuff=[]
     for index in range(len(deep)):
 	deep[index] = deep[index]*-1
+	stuff.append(0)
+
 
     deepthick = map(lambda x: x-thickness, deep)
     f=open('blocks','w')
+
     for ((start,end),polarity,magnet) in layer:
         if polarity == 'n': fillcolor = 'b'
         else: fillcolor = 'w'
-        
-        index_lower = next_index(dist,start)
-        index_upper = next_index(dist,end)
 
-        if (index_lower != index_upper):
-            xs = dist[index_lower:index_upper+1]
-            lys = deep[index_lower:index_upper+1]
-            tys = deepthick[index_lower:index_upper+1]
+	# The next index above start
+        index_lower = next_upper(dist,start)
+        # The next index below end        
+	index_upper = next_lower(dist,end)
+
+	# Finding the excact depth at start and end
+	y_start = get_depth(dist,deep,start)
+        y_end = get_depth(dist,deep, end)
+	y_start_lower = y_start-thickness
+        y_end_lower = y_end-thickness
+
+        if (index_lower == index_upper +1):
+	    xs = [start,end]
+	    lys = [y_start, y_end]
+	    tys = [y_start_lower, y_end_lower] 
+        else:
+            xs = [start]+dist[index_lower:index_upper+1]+[end]
+            lys = [y_start]+deep[index_lower:index_upper+1]+[y_end]
+            tys = [y_start_lower]+ deepthick[index_lower:index_upper+1] + [y_end_lower]
 	    
-            x = concatenate( (xs, xs[::-1]) )
-            y = concatenate( (lys, tys[::-1]) )
-	    m = []
-	    depth = []
+        x = concatenate( (xs, xs[::-1]) )
+        y = concatenate( (lys, tys[::-1]) )
+	m = []
+	depth = []
 	    
-	    if fillcolor == 'b':
-		for i in range(len(xs)):		
-		    m.append(xs[i])	    
-		    depth.append(lys[i])
-	    if fillcolor == 'w':
-		for i in range(len(xs)):
-		    m.append(xs[i])
-	    	    depth.append(-1*lys[i])
+	if fillcolor == 'b':
+	    for i in range(len(xs)):		
+		m.append(xs[i])	    
+		depth.append(lys[i])
+	if fillcolor == 'w':
+	    for i in range(len(xs)):
+		m.append(xs[i])
+	    	depth.append(-1*lys[i])
 	    ## Producing a file called blocks which can be used to plot up in gmt
 	    
-	    if (end >= dist_anom[0] and start <= dist_anom[-1]):
-	    	if fillcolor == 'b':
-	            f.write("> -Gblack\n")
-	            for i in range(len(x)):
-	    	 	f.write(str(x[i])+ " " + str(y[i]) + "\n")
-	    	else:
-	            f.write("> -Gwhite\n")
-	            for i in range(len(x)):
-			f.write(str(x[i])+ " " + str(y[i]) + "\n")
+	if (end >= dist_anom[0] and start <= dist_anom[-1]):
+	    if fillcolor == 'b':
+	        f.write("> -Gblack\n")
+	        for i in range(len(x)):
+	    	    f.write(str(x[i])+ " " + str(y[i]) + "\n")
+	    else:
+	        f.write("> -Gwhite\n")
+	        for i in range(len(x)):
+		    f.write(str(x[i])+ " " + str(y[i]) + "\n")
           
-	    bathplot.fill(x, y, facecolor=fillcolor)
+	bathplot.fill(x, y, facecolor=fillcolor)
+
+
+
+        #if (index_lower != index_upper):
+            #xs = dist[index_lower:index_upper+1]
+            #lys = deep[index_lower:index_upper+1]
+            #tys = deepthick[index_lower:index_upper+1]
+	    
+            #x = concatenate( (xs, xs[::-1]) )
+            #y = concatenate( (lys, tys[::-1]) )
+	    #m = []
+	    #depth = []
+	    
+	    #if fillcolor == 'b':
+		#for i in range(len(xs)):		
+		    #m.append(xs[i])	    
+		    #depth.append(lys[i])
+	    #if fillcolor == 'w':
+		#for i in range(len(xs)):
+		    #m.append(xs[i])
+	    	    #depth.append(-1*lys[i])
+	    ## Producing a file called blocks which can be used to plot up in gmt
+	    
+	    #if (end >= dist_anom[0] and start <= dist_anom[-1]):
+	    	#if fillcolor == 'b':
+	            #f.write("> -Gblack\n")
+	            #for i in range(len(x)):
+	    	 	#f.write(str(x[i])+ " " + str(y[i]) + "\n")
+	    	#else:
+	            #f.write("> -Gwhite\n")
+	            #for i in range(len(x)):
+			#f.write(str(x[i])+ " " + str(y[i]) + "\n")
+          
+	    #bathplot.fill(x, y, facecolor=fillcolor)
     f.close()
     #Fix to get one entry per fault/rift in legend
     fault_plotted = False
@@ -118,10 +167,12 @@ def create_plot(dist, dist_anom, deep, anom, layer, faultrift, model, parameters
             	    	         label="Failed rift")
             	rift_plotted = True
 
+ 
     bathplot.plot(dist, deep, linewidth=2)
+    anomplot.plot(dist, stuff, linewidth=0.5)
     bathplot.set_xlim(min(dist_anom),max(dist_anom))
     bathplot.set_ylim(min(deepthick),0)
-
+    #anomplot.set_ylim(-100,100)
     anomplot.legend()
     bathplot.legend()
 

@@ -14,16 +14,16 @@ is a program that handles forward modeling of marine magnetic anomalies. It is b
 
 .SH DATA FILE
 The data file is an ascii file with five columns, 
-.B distance lat lon depth anom
+.B distance lat lon depth anom,
 where
 .B distance
-is distance from the ridge in kilometers
+is distance from the ridge in kilometers,
 .B lat
-is the latitude of the data
+is the latitude of the data,
 .B lon
-is the longitude of the data
+is the longitude of the data,
 .B depth
-is the (positive) depth in kilometers and
+is the (positive) depth in kilometers and,
 .B anom
 is the magnetic anomaly (in nT). In the configuration file, the data file can be set with the
 .I data
@@ -60,7 +60,7 @@ A file containing the jump(s) used in the modeling. In the configuration file, t
 key, i.e. 
 .B jump=filename.
 The format of the jump file is
-.B time jump
+.B time jump,
 where
 .B time
 is the time when the jump occurs in Myr (million years) and
@@ -74,7 +74,7 @@ A file containing the spreading rate(s) used in the modeling. In the configurati
 key, i.e. 
 .B spreadingrate=filename.
 The format of the spreading rate file is
-.B start end rate
+.B start end rate,
 where
 .B start
 and
@@ -90,7 +90,7 @@ A file containing the magnetization used in the modeling. In the configuration f
 key, i.e. 
 .B magnetization=filename.
 The format of the magnetization file is
-.B start end magnetization
+.B start end magnetization,
 where
 .B start
 and
@@ -106,7 +106,7 @@ A file containing the time scale used in the modeling. In the configuration file
 key, i.e. 
 .B timescale=filename.
 The format of the time scale file is 
-.B start end 
+.B start end,
 where
 .B start
 and
@@ -149,11 +149,11 @@ key, i.e.
 Default is obliquity=0.
 
 .TP
-\fB\-z\fR thickness \fB\-\-thickness=\fRthickness
+\fB\-z\fR thickness \fB\-\-thickness=\fRkilometers
 Thickness of the magnetized layer in kilometers. In the configuration file, the thickness can be set with the
 .I thickness
 key, i.e. 
-.B thickness=thickness.
+.B thickness=amount.
 Default is thickness=0.5.
 
 .TP
@@ -173,7 +173,7 @@ A configuration file which defines basic input into
 .B Spreading Rate File Example
 .nf
 % Everything written after the percentage sign is a comment
-% This is a plain text file with the format as seen below
+% This is a plain text file with the format below
 % start(Myr) end(Myr) full spreading rate(km/Myr)
 0 50 20 
 50 89 25
@@ -184,7 +184,7 @@ A configuration file which defines basic input into
 .B Asymmetry File Example
 .nf
 % Everything written after the percentage sign is a comment
-% This is a plain text file with the format as seen below
+% This is a plain text file with the format below
 % start(Myr) end(Myr) asymmetry(%)
 0 50 0.04 
 50 89 0.01
@@ -195,7 +195,7 @@ A configuration file which defines basic input into
 .B Jump File Example
 .nf
 % Everything written after the percentage sign is a comment
-% This is a plain text file with the format as seen below
+% This is a plain text file with the format below
 % time(Myr) distance(km)
 3 4.3
 23 -3.1
@@ -205,7 +205,7 @@ A configuration file which defines basic input into
 .B Magnetization File Example
 .nf
 % Everything written after the percentage sign is a comment
-% This is a plain text file with the format as seen below
+% This is a plain text file with the format below
 % start(Myr) end(Myr) magnetization(A/m)
 0 0.78 20 
 0.78 10 10 
@@ -216,7 +216,7 @@ A configuration file which defines basic input into
 .B Time Scale File Example
 .nf
 % Everything written after the percentage sign is a comment
-% This is a plain text file with the format as seen below
+% This is a plain text file with the format below
 % start(Myr) end(Myr)
 0 10
 10 50 
@@ -228,7 +228,7 @@ A configuration file which defines basic input into
 .B Configuration file
 .nf
 % Everything written after the percentage sign is a comment
-% This is a plain text file with the format as seen below
+% This is a plain text file with the format below
 thickness=1
 inclination=75
 declination=-18
